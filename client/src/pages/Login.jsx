@@ -3,35 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { login as loginApi } from '../services/api';
-import { consumeAuthMessage, getDefaultRouteForRole, setAuth } from '../utils/auth';
+import { loginApi } from '../services/authService';
+import { useAuth } from '../hooks/useAuth';
+import { consumeAuthMessage, getDefaultRouteForRole } from '../utils/auth';
+import { Icon, ICONS } from '../components/ui/Icon';
 
-// ─────────────────────────────────────────────────────────────
-// ESQUEMA DE VALIDACIÓN (Zod) - Satisface las Reglas del Negocio
-// ─────────────────────────────────────────────────────────────
 const loginSchema = z.object({
   username: z
     .string()
     .min(1, { message: "El usuario es obligatorio." }),
   password: z
     .string()
-    .min(8, { message: "La contraseña debe tener al menos 8 caracteres." }), // Criterio 3
+    .min(8, { message: "La contraseña debe tener al menos 8 caracteres." }),
 });
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [apiError, setApiError] = useState(''); // Error exclusivo de la respuesta del servidor
+  const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Integración de React Hook Form
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur', // Criterio 2: Dispara validación al perder el foco (onBlur)
+    mode: 'onBlur',
   });
 
   useEffect(() => {
@@ -41,15 +40,13 @@ export default function Login() {
     }
   }, []);
 
-  // Criterio 4: Solo se ejecuta si pasa Zod sin errores visuales residuales
   const onSubmit = async (data) => {
     setApiError('');
     setLoading(true);
 
     try {
-      // El data.username ya viene limpio por validación
       const responseData = await loginApi(data.username.trim(), data.password);
-      setAuth(responseData.token, responseData.usuario);
+      login(responseData.usuario);
       navigate(getDefaultRouteForRole(responseData.usuario?.rol), { replace: true });
     } catch (err) {
       setApiError(err.message || 'No se pudo iniciar sesión.');
@@ -59,72 +56,95 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:40px_40px]">
+    <div className="min-h-screen bg-[#0A0A0B] text-white flex flex-col justify-between font-body relative overflow-hidden">
       
-      {/* Navbar Simple */}
-      <nav className="w-full p-6 flex items-center">
+      {/* Glow Effects */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#E85D2F]/10 blur-[140px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#C1272D]/10 blur-[140px] rounded-full pointer-events-none"></div>
+
+      {/* Header / Brand Bar */}
+      <header className="w-full p-6 max-w-7xl mx-auto flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-primary text-white font-bold w-8 h-8 flex items-center justify-center rounded">
-            A
+          <div className="bg-[#E85D2F]/15 border border-[#E85D2F]/30 p-2 rounded-xl text-[#E85D2F] flex items-center justify-center shadow-sm">
+            <Icon path={ICONS.burger} size={22} />
           </div>
-          <span className="font-bold tracking-widest text-sm">A LA BURGER OS</span>
+          <span className="font-heading font-black tracking-wider text-base text-white uppercase">
+            A LA BURGER OS
+          </span>
         </div>
-      </nav>
+        <span className="text-[11px] font-bold px-3 py-1 bg-[#1C1C20] text-zinc-400 border border-white/10 rounded-full">
+          v2.0 Security Hardened
+        </span>
+      </header>
 
-      {/* Contenido Principal a dos columnas */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-8 z-10">
         
-        {/* Columna Izquierda: Textos */}
+        {/* Left Column: Hero Copy */}
         <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-muted bg-card">
-            <span className="w-2 h-2 rounded-full bg-primary"></span>
-            <span className="text-xs font-semibold tracking-wider text-foreground">PLATAFORMA PARA RESTAURANTES</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#E85D2F]/30 bg-[#E85D2F]/10">
+            <span className="w-2 h-2 rounded-full bg-[#E85D2F]"></span>
+            <span className="text-xs font-bold tracking-wider text-[#E85D2F] uppercase">PLATAFORMA GASTRONÓMICA</span>
           </div>
 
-          <h1 className="text-6xl md:text-7xl font-extrabold tracking-tight uppercase leading-none">
+          <h1 className="text-5xl md:text-6xl font-heading font-black tracking-tight text-white uppercase leading-none">
             Tu operación,<br />
-            <span className="text-primary">sin caos.</span>
+            <span className="text-[#E85D2F]">deliciosa y sin caos.</span>
           </h1>
 
-          <p className="text-muted-foreground text-lg max-w-md leading-relaxed">
-            A La Burger OS centraliza pedidos, inventario y administración en una sola plataforma. Diseñado exclusivamente para cadenas de hamburguesas que quieren crecer con control total.
+          <p className="text-zinc-400 text-base md:text-lg max-w-md leading-relaxed">
+            A La Burger OS centraliza pedidos, inventario, KDS y caja en un solo lugar con la mejor experiencia visual.
           </p>
+
+          <div className="flex items-center gap-4 text-xs font-bold text-zinc-400 pt-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#7A8450]">✓</span> Control de stock
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#7A8450]">✓</span> KDS en tiempo real
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#7A8450]">✓</span> JWT Security
+            </div>
+          </div>
         </div>
 
-        {/* Columna Derecha: Tarjeta de Login */}
+        {/* Right Column: Login Card */}
         <div className="w-full max-w-md mx-auto lg:ml-auto">
-          <div className="bg-card p-8 rounded-2xl border border-muted shadow-2xl">
-            <h2 className="text-xl font-bold mb-6 tracking-wide uppercase">Login</h2>
+          <div className="bg-[#141416] text-white p-8 rounded-xl border border-[#242428] shadow-2xl">
+            <div className="mb-6">
+              <h2 className="text-2xl font-heading font-black tracking-wider uppercase text-white">Iniciar Sesión</h2>
+              <p className="text-xs text-zinc-400 mt-1">Ingresa tus credenciales para acceder al sistema</p>
+            </div>
             
             <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
               {apiError && (
-                <p className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-2">
+                <div className="text-xs font-bold text-[#C1272D] bg-[#C1272D]/15 border border-[#C1272D]/30 rounded-xl px-4 py-3">
                   {apiError}
-                </p>
+                </div>
               )}
 
-              {/* Input Usuario (Username) */}
-              <div className="space-y-2">
-                <label className="text-xs font-black text-neutral-400 uppercase tracking-widest pl-1">
+              {/* Username Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400">
                   Usuario
                 </label>
                 <input 
                   type="text" 
                   {...register('username')}
                   placeholder="ej. admin"
-                  className={`w-full bg-[#141416] border text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-neutral-600 font-bold ${
-                    errors.username ? 'border-destructive focus:ring-1 focus:ring-destructive' : 'border-[#1F1F23] focus:border-primary focus:ring-1 focus:ring-primary'
+                  className={`w-full bg-[#1C1C20] border text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-zinc-600 font-medium ${
+                    errors.username ? 'border-[#C1272D] focus:ring-1 focus:ring-[#C1272D]' : 'border-[#2D2D35] focus:border-[#E85D2F] focus:ring-1 focus:ring-[#E85D2F]'
                   }`}
                 />
-                {/* Error Inline - Criterio 1 y 2 */}
                 {errors.username && (
-                  <p className="text-xs text-destructive pl-1 font-semibold">{errors.username.message}</p>
+                  <p className="text-xs text-[#C1272D] pl-1 font-semibold">{errors.username.message}</p>
                 )}
               </div>
 
-              {/* Input Contraseña */}
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground" htmlFor="password">
+              {/* Password Input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400" htmlFor="password">
                   Contraseña
                 </label>
                 <div className="relative">
@@ -133,14 +153,14 @@ export default function Login() {
                     id="password"
                     {...register('password')}
                     placeholder="••••••••"
-                    className={`w-full bg-muted border text-foreground rounded-lg pl-4 pr-12 py-3 outline-none transition-all ${
-                      errors.password ? 'border-destructive' : 'border-transparent focus:border-primary'
+                    className={`w-full bg-[#1C1C20] border text-white rounded-xl pl-4 pr-12 py-3 text-sm outline-none transition-all placeholder:text-zinc-600 font-medium ${
+                      errors.password ? 'border-[#C1272D] focus:ring-1 focus:ring-[#C1272D]' : 'border-[#2D2D35] focus:border-[#E85D2F] focus:ring-1 focus:ring-[#E85D2F]'
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center p-1 rounded focus:outline-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors p-1"
                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                   >
                     {showPassword ? (
@@ -155,31 +175,29 @@ export default function Login() {
                     )}
                   </button>
                 </div>
-                {/* Error Inline - Criterio 3 */}
                 {errors.password && (
-                  <p className="text-xs text-destructive pl-1 font-semibold">{errors.password.message}</p>
+                  <p className="text-xs text-[#C1272D] pl-1 font-semibold">{errors.password.message}</p>
                 )}
               </div>
 
-              {/* Botón de Submit */}
+              {/* Submit Button */}
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-primary hover:bg-orange-600 text-white font-semibold py-3 rounded-lg transition-colors mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full bg-[#E85D2F] hover:bg-[#d64e21] text-white font-heading font-bold py-3.5 rounded-full transition-all duration-200 shadow-md mt-4 disabled:opacity-60 disabled:cursor-not-allowed uppercase tracking-wider text-sm cursor-pointer active:scale-95"
               >
-                {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                {loading ? 'Iniciando sesión...' : 'Ingresar al sistema'}
               </button>
             </form>
-
-            <div className="mt-6 text-center">
-              <a href="#" className="text-sm text-muted-foreground hover:text-white transition-colors">
-                 
-              </a>
-            </div>
           </div>
         </div>
 
       </main>
+
+      {/* Footer */}
+      <footer className="w-full p-6 text-center text-xs text-zinc-500 border-t border-white/5 z-10">
+        © 2026 A La Burger OS. Todos los derechos reservados.
+      </footer>
     </div>
   );
 }

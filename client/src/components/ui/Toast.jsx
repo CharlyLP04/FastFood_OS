@@ -4,47 +4,60 @@ import { Icon, ICONS } from './Icon';
 export function Toast({ message, type = 'info', onClose }) {
   const [isClosing, setIsClosing] = useState(false);
 
-  // Auto-close logic
   useEffect(() => {
     const timer = setTimeout(() => {
       handleClose();
-    }, 3000); // 3 seconds visible
+    }, 3200);
     return () => clearTimeout(timer);
   }, []);
 
   const handleClose = () => {
     setIsClosing(true);
-    setTimeout(onClose, 300); // wait for fade-out animation
+    setTimeout(onClose, 250);
   };
 
   const getStyle = () => {
     switch (type) {
       case 'success':
         return {
-          bg: 'bg-success/10',
-          text: 'text-success',
-          border: 'border-success/20',
-          glow: 'shadow-[0_0_20px_rgba(34,197,94,0.15)]',
+          bg: 'bg-gradient-to-br from-[#10B981]/25 to-[#10B981]/5',
+          text: 'text-[#10B981]',
+          border: 'border-[#10B981]/40',
+          glow: 'shadow-[0_0_20px_rgba(16,185,129,0.3)]',
+          progressBar: 'bg-[#10B981]',
           icon: ICONS.check,
-          title: 'Éxito'
+          title: 'Confirmación'
         };
       case 'warning':
         return {
-          bg: 'bg-destructive/10',
-          text: 'text-destructive',
-          border: 'border-destructive/20',
-          glow: 'shadow-[0_0_20px_rgba(239,68,68,0.15)]',
+          bg: 'bg-gradient-to-br from-[#F59E0B]/25 to-[#F59E0B]/5',
+          text: 'text-[#F59E0B]',
+          border: 'border-[#F59E0B]/40',
+          glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]',
+          progressBar: 'bg-[#F59E0B]',
           icon: ICONS.bell,
-          title: 'Advertencia'
+          title: 'Alerta Operativa'
+        };
+      case 'error':
+      case 'destructive':
+        return {
+          bg: 'bg-gradient-to-br from-[#EF4444]/25 to-[#EF4444]/5',
+          text: 'text-[#EF4444]',
+          border: 'border-[#EF4444]/40',
+          glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+          progressBar: 'bg-[#EF4444]',
+          icon: ICONS.trash,
+          title: 'Error de Sistema'
         };
       default:
         return {
-          bg: 'bg-[#E8530A]/10',
-          text: 'text-[#E8530A]',
-          border: 'border-[#E8530A]/20',
-          glow: 'shadow-[0_0_20px_rgba(232,83,10,0.15)]',
-          icon: ICONS.settings,
-          title: 'Información'
+          bg: 'bg-gradient-to-br from-[#E85D2F]/25 to-[#E85D2F]/5',
+          text: 'text-[#E85D2F]',
+          border: 'border-[#E85D2F]/40',
+          glow: 'shadow-[0_0_20px_rgba(232,93,47,0.3)]',
+          progressBar: 'bg-[#E85D2F]',
+          icon: ICONS.burger,
+          title: 'Notificación A La Burger'
         };
     }
   };
@@ -52,40 +65,33 @@ export function Toast({ message, type = 'info', onClose }) {
   const style = getStyle();
 
   return (
-    <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-[100] flex flex-col overflow-hidden bg-[#0A0A0B]/90 backdrop-blur-xl border border-white/10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] min-w-[460px] max-w-xl transition-all duration-300 ${isClosing ? 'opacity-0 -translate-y-4 scale-95' : 'animate-in slide-in-from-top-8 fade-in zoom-in-95'}`}>
+    <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col overflow-hidden bg-[#141416]/95 backdrop-blur-2xl text-white border border-[#242428] rounded-2xl ${style.glow} min-w-[380px] max-w-lg transition-all duration-300 ${isClosing ? 'opacity-0 -translate-y-6 scale-90' : 'animate-pop-in'}`}>
       
-      <div className="flex items-center gap-6 px-8 py-6">
-        {/* Ícono Brillante */}
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${style.bg} ${style.text} ${style.border} border ${style.glow}`}>
-          <Icon path={style.icon} size={28} />
+      {/* Top Accent Line */}
+      <div className={`h-1 w-full ${style.progressBar}`} />
+
+      <div className="flex items-center gap-4 px-6 py-4">
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${style.bg} ${style.text} ${style.border} border shadow-inner transition-transform hover:scale-105`}>
+          <Icon path={style.icon} size={22} />
         </div>
         
-        {/* Texto */}
         <div className="flex-1 min-w-0">
-          <p className="text-lg font-black text-white uppercase tracking-wider leading-tight">
+          <p className="text-xs font-heading font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${style.progressBar} animate-pulse`} />
             {style.title}
           </p>
-          <p className="text-sm font-bold text-neutral-400 mt-1 leading-relaxed">
+          <p className="text-xs text-zinc-300 mt-0.5 leading-relaxed font-medium">
             {message}
           </p>
         </div>
         
-        {/* Botón Cerrar */}
         <button 
           onClick={handleClose} 
-          className="text-neutral-500 hover:text-white ml-2 p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           aria-label="Cerrar notificación"
         >
-          <Icon path={ICONS.x} size={24} />
+          ✕
         </button>
-      </div>
-
-      {/* Barra de Progreso */}
-      <div className="h-1 w-full bg-white/5">
-        <div 
-          className={`h-full ${style.bg.replace('/10', '')} origin-left`}
-          style={{ animation: 'toast-progress 3s linear forwards' }}
-        />
       </div>
     </div>
   );

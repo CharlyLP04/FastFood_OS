@@ -5,7 +5,7 @@ const dbUrl = process.env.DB_URL || '';
 const isInternalRender = dbUrl.includes('.internal');
 const sslConfig = isInternalRender
   ? false
-  : (process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false);
+  : (dbUrl.includes('neon.tech') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false);
 
 const pool = new Pool({
   connectionString: dbUrl,

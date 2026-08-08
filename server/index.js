@@ -1,8 +1,17 @@
 // Punto de entrada principal del servidor A La Burger OS
 require('dotenv').config();
 
+// HU-4: Validar variables de entorno críticas ANTES de cargar cualquier módulo.
+const validateEnv = require('./src/config/validateEnv');
+validateEnv();
+
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+
+const { corsOptions } = require('./src/config/corsConfig');
+const { helmetOptions } = require('./src/config/helmetConfig');
 
 const authRoutes = require('./src/routes/authRoutes');
 const rutas = require('./src/routes/index');
@@ -17,16 +26,19 @@ app.set('trust proxy', 1);
 const PUERTO = process.env.PORT || 3000;
 
 // ─────────────────────────────────────────────────────────────
-// CORS
+// SEGURIDAD: Headers HTTP (helmet) — debe ir antes de cualquier ruta
 // ─────────────────────────────────────────────────────────────
 
-app.use(
-  cors({
-    origin: '*', // Permitir cualquier origen para evitar bloqueos en la app interna
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+app.use(helmet(helmetOptions));
+
+// ─────────────────────────────────────────────────────────────
+// CORS — whitelist explícita, sin wildcard "*"
+// Orígenes permitidos se configuran en src/config/corsConfig.js
+// y en la variable de entorno ALLOWED_ORIGINS (producción).
+// ─────────────────────────────────────────────────────────────
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Pre-flight para todos los endpoints
 
 // ─────────────────────────────────────────────────────────────
 // IMPORTANTE: LOS PARSERS VAN ANTES DE LAS RUTAS
@@ -34,6 +46,11 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); // HU-5: necesario para leer req.cookies.access_token
+
+// Validación de Origen para métodos mutadores (POST, PUT, PATCH, DELETE)
+const { verifyOrigin } = require('./src/middleware/verifyOrigin');
+app.use(verifyOrigin);
 
 // ─────────────────────────────────────────────────────────────
 // RUTAS

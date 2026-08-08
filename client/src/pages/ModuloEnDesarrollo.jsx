@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, ICONS } from '../components/ui/Icon';
 import { Toast } from '../components/ui/Toast';
-import { clearAuth, getInitials, getUsuario } from '../utils/auth';
+import { getInitials } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
+
 
 export default function ModuloEnDesarrollo({ modulo }) {
   const navigate = useNavigate();
-  const usuario = getUsuario();
+  const { usuario } = useAuth();
+
 
   const [toast, setToast] = useState(null);
 
@@ -21,9 +24,10 @@ export default function ModuloEnDesarrollo({ modulo }) {
     }
   }, [toast]);
 
-  const handleLogout = () => {
-    clearAuth();
-    window.location.href = '/login';
+  const { logout } = useAuth();
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
   };
 
   const getModuloIcon = () => {

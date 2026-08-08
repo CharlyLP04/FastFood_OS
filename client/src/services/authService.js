@@ -1,60 +1,91 @@
-// Apunta a la URL de tu backend. Cambia el puerto si usas uno diferente al 5000
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+/**
+ * authService.js — Servicios de autenticación (HU-5)
+ *
+ * Los tokens JWT ahora viven en httpOnly cookies — el cliente NUNCA los
+ * lee ni los almacena. Todas las llamadas incluyen credentials: 'include'
+ * para que el navegador envíe y reciba las cookies automáticamente.
+ *
+ * El estado de autenticación se gestiona en AuthContext, NO aquí.
+ */
 
-export const authService = {
-  /**
-   * Envía las credenciales al backend y almacena el token si es correcto
-   */
-  login: async (email, password) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+const API_URL = import.meta.env.PROD
+  ? 'https://alaburger-os-2fyu.onrender.com/api'
+  : 'http://localhost:3000/api';
 
-      const data = await response.json();
+/**
+ * login — Envía credenciales al servidor.
+ * El servidor responde seteando access_token y refresh_token como cookies httpOnly.
+ * Solo devuelve el objeto usuario (sin tokens en el body).
+ *
+ * @param {string} username
+ * @param {string} password
+ * @returns {Promise<{ usuario: object }>}
+ */
+export async function loginApi(username, password) {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    credentials: 'include', // Necesario para recibir las cookies httpOnly
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
 
-      if (!response.ok) {
-        // Captura errores del backend (400 datos incompletos, 401 credenciales incorrectas, 429 rate-limit)
-        throw new Error(data.error || 'Error al iniciar sesión');
-      }
+  const data = await response.json();
 
-      // Si el login es exitoso, guardamos el token y los datos del usuario en localStorage
-      if (data.token) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.usuario));
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error en authService.login:', error.message);
-      throw error;
-    }
-  },
-
-  /**
-   * Limpia la sesión del usuario
-   */
-  logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  },
-
-  /**
-   * Obtiene los datos del usuario actual desde el almacenamiento local
-   */
-  getCurrentUser: () => {
-    const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
-  },
-
-  /**
-   * Obtiene el token guardado para adjuntarlo a futuras peticiones protegidas
-   */
-  getToken: () => {
-    return localStorage.getItem('token');
+  if (!response.ok) {
+    throw new Error(data.error || data.mensaje || 'Error al iniciar sesión');
   }
-};
+
+  return data; // { usuario: { id, nombre, username, rol } }
+}
+
+/**
+ * me — Verifica si hay una sesión activa consultando al servidor.
+ * El servidor lee la cookie access_token y devuelve { usuario } si es válida.
+ * Devuelve null / lanza error si no hay sesión.
+ *
+ * Usado por AuthContext al montar la app.
+ *
+ * @returns {Promise<{ usuario: object }>}
+ */
+export async function me() {
+  const response = await fetch(`${API_URL}/auth/me`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Sin sesión activa');
+  }
+
+  return response.json(); // { usuario }
+}
+
+/**
+ * logoutApi — Llama al servidor para revocar las cookies httpOnly.
+ * El servidor limpia ambas cookies (access_token y refresh_token).
+ * El estado local lo limpia AuthContext.
+ */
+export async function logoutApi() {
+  await fetch(`${API_URL}/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+
+/**
+ * refreshToken — Solicita un nuevo access_token usando el refresh_token cookie.
+ * El navegador envía la cookie automáticamente (path: /api/auth/refresh).
+ * El servidor responde seteando una nueva cookie access_token.
+ */
+export async function refreshToken() {
+  const response = await fetch(`${API_URL}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('No se pudo renovar la sesión');
+  }
+
+  return response.json(); // { ok: true }
+}

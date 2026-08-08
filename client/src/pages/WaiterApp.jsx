@@ -2,24 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, ICONS } from '../components/ui/Icon';
 import { getProductos, crearPedido } from '../services/api';
-import { getUsuario, clearAuth } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
+import { CardSkeleton } from '../components/ui/Skeleton';
 
 const MESA_ID = 5;
 
-const CATEGORY_EMOJI = {
-  Hamburguesas: '🍔',
-  Bebidas: '🥤',
-  Complementos: '🍟',
-  Postres: '🍰',
-};
-
-function getEmoji(categoria) {
-  return CATEGORY_EMOJI[categoria] || '🍔';
-}
-
 export default function WaiterApp() {
   const navigate = useNavigate();
-  const usuario = getUsuario();
+  const { usuario, logout } = useAuth();
+
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -108,31 +99,32 @@ export default function WaiterApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex justify-center">
-      {/* Contenedor simulando la pantalla del celular */}
-      <div className="w-full max-w-md border-x border-[#1E1E1E] flex flex-col h-screen">
+    <div className="min-h-screen bg-[#0A0A0B] text-white flex justify-center font-body animate-fade-in">
+      <div className="w-full max-w-md border-x border-[#242428] bg-[#141416] flex flex-col h-screen shadow-2xl">
         
         {/* Header App Mesero */}
-        <header className="p-6 flex justify-between items-center border-b border-[#1E1E1E]">
+        <header className="p-5 flex justify-between items-center border-b border-[#242428] bg-[#141416] text-white">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Link to={usuario?.rol === 'administrador' ? '/' : '/mesero'} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="bg-primary text-white font-bold w-6 h-6 rounded flex items-center justify-center text-xs">A</div>
-                <h1 className="font-bold tracking-widest text-lg text-white">BURGER OS</h1>
+                <div className="bg-[#E85D2F]/15 border border-[#E85D2F]/30 p-1.5 rounded-xl text-[#E85D2F] flex items-center justify-center">
+                  <Icon path={ICONS.burger} size={18} />
+                </div>
+                <h1 className="font-heading font-black tracking-wider text-base text-white uppercase">BURGER OS</h1>
               </Link>
               {usuario?.rol === 'administrador' && (
-                <Link to="/" className="text-[10px] bg-[#1E1E1E] border border-[#2A2A2F] text-neutral-300 font-bold px-2.5 py-1 rounded-lg ml-2 transition-colors uppercase">
+                <Link to="/" className="text-[10px] bg-white/10 text-white font-bold px-2.5 py-1 rounded-full ml-1 transition-colors uppercase active:scale-95">
                   Panel
                 </Link>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm font-semibold tracking-wider text-muted-foreground">
-                MESA <span className="bg-primary text-white px-2 py-0.5 rounded text-xs">5</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-400">
+                MESA <span className="bg-[#E85D2F] text-white px-2 py-0.5 rounded-full text-[11px] font-black">5</span>
               </div>
               <button 
-                onClick={() => { clearAuth(); navigate('/login'); }}
-                className="text-xs text-destructive hover:text-white bg-destructive/10 hover:bg-destructive font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                onClick={async () => { await logout(); navigate('/login'); }}
+                className="text-[10px] text-[#C1272D] hover:text-white bg-[#C1272D]/20 hover:bg-[#C1272D] font-bold px-2.5 py-1 rounded-full transition-colors cursor-pointer uppercase tracking-wider active:scale-95"
               >
                 Salir
               </button>
@@ -141,11 +133,11 @@ export default function WaiterApp() {
           <button
             type="button"
             onClick={() => setShowCart((prev) => !prev)}
-            className="bg-card p-3 rounded-xl border border-[#1E1E1E] hover:bg-[#1E1E1E] transition-colors relative"
+            className="bg-[#1C1C20] border border-[#2D2D35] p-3 rounded-full hover:bg-white/10 transition-all duration-200 relative cursor-pointer text-white active:scale-95"
           >
             <Icon path={ICONS.cart} size={20} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-[#E85D2F] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm animate-pulse">
                 {cartCount}
               </span>
             )}
@@ -154,10 +146,10 @@ export default function WaiterApp() {
 
         {orderMessage && (
           <div
-            className={`mx-4 mt-4 px-4 py-3 rounded-xl text-sm font-semibold border ${
+            className={`mx-4 mt-4 px-4 py-3 rounded-xl text-xs font-bold border animate-slide-up ${
               orderMessage.type === 'success'
-                ? 'bg-success/10 text-success border-success/30'
-                : 'bg-destructive/10 text-destructive border-destructive/30'
+                ? 'bg-[#7A8450]/20 text-[#7A8450] border-[#7A8450]/40'
+                : 'bg-[#C1272D]/20 text-[#C1272D] border-[#C1272D]/40'
             }`}
           >
             {orderMessage.text}
@@ -165,57 +157,65 @@ export default function WaiterApp() {
         )}
 
         {/* Lista de Productos */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {loading && (
-            <p className="text-muted-foreground text-sm text-center py-8">Cargando productos...</p>
-          )}
-
-          {error && (
-            <p className="text-destructive text-sm text-center py-8">{error}</p>
-          )}
-
-          {!loading && !error && productos.map((item) => (
-            <div key={item.id} className="bg-card p-4 rounded-xl border border-[#1E1E1E] flex gap-4">
-              <div className="text-4xl pt-1">{getEmoji(item.categoria)}</div>
-              <div className="flex-1">
-                <h3 className="font-bold text-lg tracking-wide uppercase">{item.nombre}</h3>
-                <p className="text-muted-foreground text-sm leading-snug mb-3">
-                  {item.descripcion}
-                </p>
-                <div className="text-primary font-bold text-xl">${item.precio}</div>
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={() => addToCart(item.id)}
-                  className="bg-primary text-white p-2 rounded-full hover:bg-[#c94508] transition-colors"
-                >
-                  <Icon path={ICONS.plus} size={20} />
-                </button>
-              </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#0A0A0B]/60">
+          {loading ? (
+            <div className="space-y-4">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
             </div>
-          ))}
+          ) : error ? (
+            <div className="bg-[#C1272D]/20 border border-[#C1272D] text-[#C1272D] p-4 rounded-xl text-center text-xs font-bold animate-fade-in">
+              {error}
+            </div>
+          ) : (
+            <div className="space-y-4 animate-fade-in">
+              {productos.map((item) => (
+                <div key={item.id} className="bg-[#141416] p-4 rounded-xl border border-[#242428] shadow-md flex gap-4 hover:border-[#E85D2F]/50 transition-all duration-200">
+                  <div className="w-12 h-12 rounded-xl bg-[#E85D2F]/15 text-[#E85D2F] flex items-center justify-center shrink-0">
+                    <Icon path={ICONS.box} size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-heading font-bold text-base text-white">{item.nombre}</h3>
+                    <p className="text-zinc-400 text-xs leading-snug mb-3">
+                      {item.descripcion}
+                    </p>
+                    <div className="text-[#E85D2F] font-heading font-black text-lg">${item.precio}</div>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => addToCart(item.id)}
+                      className="bg-[#E85D2F] text-white p-2.5 rounded-full hover:bg-[#d64e21] transition-all duration-200 cursor-pointer shadow-sm active:scale-90"
+                    >
+                      <Icon path={ICONS.plus} size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {showCart && cartItems.length > 0 && (
-          <div className="border-t border-[#1E1E1E] bg-card p-4 space-y-3">
+          <div className="border-t border-[#242428] bg-[#141416] p-4 space-y-3 shadow-2xl animate-slide-up">
             {cartItems.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
+              <div key={item.id} className="flex justify-between text-xs">
+                <span className="text-zinc-400 font-bold">
                   {item.cantidad}x {item.nombre}
                 </span>
-                <span className="font-bold">${(item.precio * item.cantidad).toFixed(0)}</span>
+                <span className="font-bold text-white">${(item.precio * item.cantidad).toFixed(0)}</span>
               </div>
             ))}
-            <div className="flex justify-between font-bold text-lg pt-2 border-t border-[#1E1E1E]">
+            <div className="flex justify-between font-heading font-bold text-base pt-2 border-t border-[#242428] text-white">
               <span>Total</span>
-              <span className="text-primary">${cartTotal.toFixed(0)}</span>
+              <span className="text-[#E85D2F]">${cartTotal.toFixed(0)}</span>
             </div>
             <button
               type="button"
               onClick={handleSubmitOrder}
               disabled={submitting}
-              className="w-full bg-primary hover:bg-[#c94508] text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-60"
+              className="w-full bg-[#E85D2F] hover:bg-[#d64e21] text-white font-heading font-bold py-3 rounded-full transition-all duration-200 cursor-pointer disabled:opacity-60 uppercase text-xs tracking-wider shadow-md active:scale-95"
             >
               {submitting ? 'Enviando pedido...' : 'Confirmar pedido'}
             </button>
