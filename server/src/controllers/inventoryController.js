@@ -71,7 +71,7 @@ const crearIngrediente = async (req, res) => {
       });
     }
 
-    const unidadesValidas = ['kg', 'g', 'l', 'ml', 'pza'];
+    const unidadesValidas = ['kg', 'g', 'l', 'ml', 'pza', 'pz', 'pieza', 'piezas', 'unidad', 'unidades', 'caja', 'paquete', 'botella', 'lata', 'porcion', 'porciones'];
     if (!unidad || typeof unidad !== 'string' || !unidadesValidas.includes(unidad.toLowerCase())) {
       return res.status(400).json({
         error: 'Datos inválidos',

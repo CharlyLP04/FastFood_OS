@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, ICONS } from '../components/ui/Icon';
-import { clearAuth, getInitials, getUsuario, hasRole } from '../utils/auth';
+import { getInitials, hasRole } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
+
 import { getInventario, crearIngrediente, editarIngrediente, registrarEntrada, getMovimientos, registrarMerma, getTodosLosMovimientos } from '../services/api';
 
 export default function Inventario() {
   const navigate = useNavigate();
-  const usuario = getUsuario();
+  const { usuario, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [inventario, setInventario] = useState([]);
   const [soloStockBajo, setSoloStockBajo] = useState(false);
 
-  // Estados del modal para nuevo ingrediente (HU-42 / HU-43)
+  // Estados del modal para nuevo ingrediente
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -24,7 +26,7 @@ export default function Inventario() {
   const [modalError, setModalError] = useState('');
   const [modalSubmitting, setModalSubmitting] = useState(false);
 
-  // Estados del modal para registrar entrada (HU-44)
+  // Estados del modal para registrar entrada
   const [isEntradaModalOpen, setIsEntradaModalOpen] = useState(false);
   const [entradaId, setEntradaId] = useState(null);
   const [entradaNombre, setEntradaNombre] = useState('');
@@ -35,7 +37,7 @@ export default function Inventario() {
   const [entradaSubmitting, setEntradaSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Estados del modal de Merma (HU-48)
+  // Estados del modal de Merma
   const [isMermaModalOpen, setIsMermaModalOpen] = useState(false);
   const [mermaId, setMermaId] = useState(null);
   const [mermaNombre, setMermaNombre] = useState('');
@@ -44,19 +46,12 @@ export default function Inventario() {
   const [mermaError, setMermaError] = useState('');
   const [mermaSubmitting, setMermaSubmitting] = useState(false);
 
-  // Estados del modal de Historial (HU-47)
+  // Estados del modal de Historial de Movimientos
   const [isHistorialModalOpen, setIsHistorialModalOpen] = useState(false);
-  const [historialId, setHistorialId] = useState(null);
-  const [historialNombre, setHistorialNombre] = useState('');
   const [historialList, setHistorialList] = useState([]);
   const [historialLoading, setHistorialLoading] = useState(false);
   const [historialError, setHistorialError] = useState('');
   const [historialFiltroTipo, setHistorialFiltroTipo] = useState('');
-
-  const handleLogout = () => {
-    clearAuth();
-    window.location.href = '/login';
-  };
 
   const loadInventario = async (stockBajoOnly) => {
     setLoading(true);
@@ -84,17 +79,18 @@ export default function Inventario() {
       const payload = {
         nombre: modalNombre.trim(),
         unidad: modalUnidad,
-        stock_minimo: Number(modalStockMinimo),
+        stock_minimo: Number(modalStockMinimo) || 0,
       };
 
       if (isEditing) {
         await editarIngrediente(editingId, payload);
+        setSuccessMessage(`Insumo "${modalNombre}" actualizado con éxito.`);
       } else {
-        payload.cantidad_actual = Number(modalCantidad);
+        payload.cantidad_actual = Number(modalCantidad) || 0;
         await crearIngrediente(payload);
+        setSuccessMessage(`Insumo "${modalNombre}" registrado con éxito.`);
       }
 
-      // Cerrar y limpiar formulario
       setIsModalOpen(false);
       setIsEditing(false);
       setEditingId(null);
@@ -102,11 +98,11 @@ export default function Inventario() {
       setModalCantidad('');
       setModalUnidad('kg');
       setModalStockMinimo('');
-      // Recargar listado
+      setTimeout(() => setSuccessMessage(''), 4000);
       loadInventario(soloStockBajo);
     } catch (err) {
       console.error('Error al guardar ingrediente:', err);
-      setModalError(err.message || 'No se pudo guardar el ingrediente.');
+      setModalError(err.message || 'No se pudo guardar el insumo.');
     } finally {
       setModalSubmitting(false);
     }
@@ -145,17 +141,11 @@ export default function Inventario() {
       };
 
       await registrarEntrada(entradaId, payload);
-      
       setSuccessMessage(`¡Entrada registrada con éxito para ${entradaNombre}!`);
       setTimeout(() => setSuccessMessage(''), 4000);
 
       setIsEntradaModalOpen(false);
       setEntradaId(null);
-      setEntradaNombre('');
-      setEntradaCantidad('');
-      setEntradaProveedor('');
-      setEntradaCosto('');
-      
       loadInventario(soloStockBajo);
     } catch (err) {
       console.error('Error al registrar entrada:', err);
@@ -185,16 +175,11 @@ export default function Inventario() {
       };
 
       await registrarMerma(mermaId, payload);
-      
       setSuccessMessage(`¡Merma registrada con éxito para ${mermaNombre}!`);
       setTimeout(() => setSuccessMessage(''), 4000);
 
       setIsMermaModalOpen(false);
       setMermaId(null);
-      setMermaNombre('');
-      setMermaCantidad('');
-      setMermaMotivo('');
-      
       loadInventario(soloStockBajo);
     } catch (err) {
       console.error('Error al registrar merma:', err);
@@ -219,8 +204,6 @@ export default function Inventario() {
   };
 
   const handleOpenHistorialModal = () => {
-    setHistorialId(null);
-    setHistorialNombre('General');
     setHistorialFiltroTipo('');
     setIsHistorialModalOpen(true);
     loadHistorial('');
@@ -243,27 +226,31 @@ export default function Inventario() {
 
   return (
     <>
-        {/* 3. ÁREA DE TRABAJO */}
-        <main className="flex-1 p-8 overflow-y-auto">
-          {/* Título de la Página */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <main className="flex-1 bg-[#0A0A0B] text-white font-body animate-fade-in">
+        <div className="max-w-7xl mx-auto pb-20">
+          
+          {/* Header de Inventario */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-[#242428] pb-6">
             <div>
-              <h1 className="text-2xl font-black tracking-wide mb-1">Inventario de Ingredientes</h1>
-              <p className="text-xs font-bold text-neutral-500 tracking-wider uppercase">
-                Consulta y control de existencias de materia prima
+              <h1 className="text-3xl font-heading font-black text-white tracking-tight flex items-center gap-3">
+                <Icon path={ICONS.box} size={30} className="text-[#E85D2F]" />
+                Inventario de Materia Prima
+              </h1>
+              <p className="text-xs sm:text-sm font-medium text-zinc-400 mt-1">
+                Control en tiempo real de existencias, insumos y auditoría de movimientos.
               </p>
             </div>
 
-            {/* Controles de Inventario: Filtro y Botón de Creación para Administradores */}
-            <div className="flex items-center gap-4">
-              {hasRole(['administrador']) && (
+            {/* Controles: Botones de Acción */}
+            <div className="flex items-center gap-3">
+              {hasRole(usuario, ['administrador']) && (
                 <>
                   <button
                     type="button"
                     onClick={handleOpenHistorialModal}
-                    className="flex items-center gap-2 bg-[#141416] hover:bg-[#1F1F23] text-neutral-300 border border-[#1F1F23] hover:border-neutral-600 px-4 py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-md active:scale-98 cursor-pointer"
+                    className="flex items-center gap-2 bg-[#141416] hover:bg-[#1C1C20] text-white border border-[#242428] px-4 py-3 rounded-full font-heading font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer"
                   >
-                    <Icon path={ICONS.clipboardList} size={16} /> Ver Movimientos
+                    <Icon path={ICONS.clipboardList} size={16} className="text-[#E85D2F]" /> Ver Movimientos
                   </button>
                   <button
                     type="button"
@@ -277,141 +264,126 @@ export default function Inventario() {
                       setModalError('');
                       setIsModalOpen(true);
                     }}
-                    className="flex items-center gap-2 bg-[#E8530A] hover:bg-[#ff6214] text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-md active:scale-98 cursor-pointer"
+                    className="flex items-center gap-2 bg-gradient-to-r from-[#E85D2F] to-[#d64e21] hover:from-[#f0683a] hover:to-[#e85d2f] text-white font-heading font-black text-xs uppercase tracking-wider px-5 py-3 rounded-full transition-all shadow-[0_4px_20px_rgba(232,93,47,0.35)] active:scale-95 cursor-pointer"
                   >
-                    <Icon path={ICONS.plus} size={16} /> Nuevo Ingrediente
+                    <Icon path={ICONS.plus} size={18} /> Nuevo Insumo
                   </button>
                 </>
               )}
 
-              <label className="flex items-center gap-3 cursor-pointer group bg-[#141416] border border-[#1F1F23] px-4 py-2.5 rounded-lg hover:border-neutral-800 transition-colors">
+              <label className="flex items-center gap-2.5 cursor-pointer bg-[#141416] border border-[#242428] px-4 py-3 rounded-full hover:border-zinc-700 transition-colors">
                 <input
                   type="checkbox"
                   checked={soloStockBajo}
                   onChange={(e) => setSoloStockBajo(e.target.checked)}
-                  className="accent-[#E8530A] h-4 w-4 cursor-pointer"
+                  className="accent-[#E85D2F] h-4 w-4 cursor-pointer"
                 />
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-400 group-hover:text-white transition-colors">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
                   Solo stock bajo
                 </span>
               </label>
             </div>
           </div>
 
-          {/* Banner de error */}
+          {/* Banners */}
           {error && (
-            <div className="mb-6 bg-destructive/10 border border-destructive/30 rounded-xl p-4 flex items-center gap-3 text-destructive">
-               <div className="text-destructive font-bold text-lg">⚠️</div>
-               <div className="text-xs font-bold uppercase tracking-wider">{error}</div>
+            <div className="mb-6 bg-[#EF4444]/15 border border-[#EF4444]/30 rounded-xl p-4 flex items-center gap-3 text-[#EF4444] text-xs font-bold uppercase tracking-wider animate-fade-in">
+              <Icon path={ICONS.trash} size={18} /> {error}
             </div>
           )}
-
-          {/* Banner de éxito */}
           {successMessage && (
-            <div className="mb-6 bg-success/10 border border-success/30 rounded-xl p-4 flex items-center gap-3 text-success">
-               <div className="text-success font-bold text-lg">✅</div>
-               <div className="text-xs font-bold uppercase tracking-wider">{successMessage}</div>
+            <div className="mb-6 bg-[#10B981]/15 border border-[#10B981]/30 rounded-xl p-4 flex items-center gap-3 text-[#10B981] text-xs font-bold uppercase tracking-wider animate-fade-in">
+              <Icon path={ICONS.check} size={18} /> {successMessage}
             </div>
           )}
 
-          {/* Tabla de inventario */}
+          {/* Tabla de Inventario */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-neutral-500 gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-t-transparent border-primary"></div>
-              <p className="text-xs font-bold uppercase tracking-widest animate-pulse">Cargando ingredientes...</p>
+            <div className="p-12 text-center text-zinc-400 text-xs font-bold flex items-center justify-center gap-2">
+              <Icon path={ICONS.refresh} size={20} className="animate-spin text-[#E85D2F]" /> Cargando insumos...
             </div>
           ) : inventario.length === 0 ? (
-            <div className="border border-dashed border-[#1F1F23] rounded-xl py-16 flex flex-col items-center justify-center text-center text-neutral-500">
-              <span className="text-4xl mb-3">📦</span>
-              <p className="text-sm font-bold uppercase tracking-wider mb-1">Sin ingredientes registrados</p>
-              <p className="text-xs text-neutral-600">No se encontraron materias primas en el almacén</p>
+            <div className="border border-dashed border-[#242428] rounded-xl py-16 flex flex-col items-center justify-center text-center text-zinc-400 bg-[#141416] p-8">
+              <div className="w-14 h-14 rounded-full bg-[#E85D2F]/15 text-[#E85D2F] flex items-center justify-center mb-3">
+                <Icon path={ICONS.box} size={28} />
+              </div>
+              <p className="text-sm font-heading font-bold uppercase tracking-wider text-white mb-1">Sin insumos registrados</p>
+              <p className="text-xs text-zinc-400 max-w-xs">Haz clic en "Nuevo Insumo" para registrar tus primeras materias primas.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto bg-[#141416] border border-[#1F1F23] rounded-xl shadow-2xl">
+            <div className="overflow-x-auto bg-[#141416] border border-[#242428] rounded-xl shadow-xl">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[#1F1F23] text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-[#09090A]">
-                    <th className="p-4 pl-6">Ingrediente</th>
-                    <th className="p-4 text-right">Cantidad Actual</th>
+                  <tr className="border-b border-[#242428] text-xs font-bold text-zinc-400 uppercase tracking-wider bg-[#1C1C20]">
+                    <th className="p-4 pl-6 rounded-tl-xl">Insumo</th>
+                    <th className="p-4 text-right">Existencias</th>
                     <th className="p-4">Unidad</th>
-                    <th className="p-4 text-right">Alerta (Mínimo)</th>
+                    <th className="p-4 text-right">Mínimo</th>
                     <th className="p-4 text-center">Estado</th>
                     <th className="p-4 pr-6">Última Actualización</th>
-                    {hasRole(['administrador', 'cocina']) && <th className="p-4 text-center pr-6">Acciones</th>}
+                    <th className="p-4 text-center pr-6 rounded-tr-xl">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1F1F23] text-sm">
+                <tbody className="divide-y divide-[#242428] text-sm font-medium">
                   {displayInventario.map((item) => {
                     const isLowStock = item.cantidad_actual <= item.stock_minimo;
                     return (
-                      <tr 
-                        key={item.id} 
-                        className={`group hover:bg-[#1C1C1E] transition-colors border-l-2 ${
-                          isLowStock ? 'border-destructive bg-destructive/5 text-neutral-200' : 'border-transparent text-neutral-300'
-                        }`}
-                      >
-                        <td className="p-4 pl-6 font-bold tracking-wide uppercase text-xs">
+                      <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 pl-6 font-bold text-white uppercase text-xs">
                           {item.nombre}
                         </td>
-                        <td className={`p-4 text-right font-black text-sm ${isLowStock ? 'text-destructive' : 'text-success'}`}>
+                        <td className={`p-4 text-right font-black text-base ${isLowStock ? 'text-[#EF4444]' : 'text-[#10B981]'}`}>
                           {item.cantidad_actual}
                         </td>
-                        <td className="p-4 text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                        <td className="p-4 text-xs font-bold text-zinc-400 uppercase tracking-wider">
                           {item.unidad}
                         </td>
-                        <td className="p-4 text-right font-bold text-xs text-neutral-400">
+                        <td className="p-4 text-right font-bold text-xs text-zinc-400">
                           {item.stock_minimo}
                         </td>
                         <td className="p-4 text-center">
-                          {isLowStock ? (
-                            <span className="inline-block bg-destructive/10 text-destructive border border-destructive/20 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
-                              Bajo Stock
-                            </span>
-                          ) : (
-                            <span className="inline-block bg-success/10 text-success border border-success/20 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
-                              Suficiente
-                            </span>
-                          )}
+                          <span className={`text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border ${
+                            isLowStock 
+                              ? 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30' 
+                              : 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                          }`}>
+                            {isLowStock ? 'Stock Bajo' : 'Suficiente'}
+                          </span>
                         </td>
-                        <td className="p-4 pr-6 text-xs text-neutral-500 font-medium">
+                        <td className="p-4 pr-6 text-xs text-zinc-400 font-medium">
                           {item.ultima_actualizacion
-                            ? new Date(item.ultima_actualizacion).toLocaleString('es-MX', {
-                                dateStyle: 'short',
-                                timeStyle: 'short',
-                              })
+                            ? new Date(item.ultima_actualizacion).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
                             : 'Sin registro'}
                         </td>
-                        {hasRole(['administrador', 'cocina']) && (
-                          <td className="p-4 text-center pr-6">
-                            <div className="flex items-center justify-center gap-2">
-                              {hasRole(['administrador']) && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEntradaModal(item)}
-                                    className="text-[10px] font-bold bg-[#E8530A]/10 hover:bg-[#E8530A] text-[#E8530A] hover:text-white px-3 py-1.5 rounded-md transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
-                                  >
-                                    <Icon path={ICONS.download} size={14} /> Entrada
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditModal(item)}
-                                    className="text-[10px] font-bold bg-[#1F1F23] hover:bg-neutral-600 text-neutral-300 hover:text-white px-3 py-1.5 rounded-md transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
-                                  >
-                                    <Icon path={ICONS.edit} size={14} /> Editar
-                                  </button>
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenMermaModal(item)}
-                                className="text-[10px] font-bold bg-destructive/10 hover:bg-destructive text-destructive hover:text-white px-3 py-1.5 rounded-md transition-colors cursor-pointer uppercase tracking-wider flex items-center gap-1.5"
-                              >
-                                <Icon path={ICONS.trash} size={14} /> Merma
-                              </button>
-                            </div>
-                          </td>
-                        )}
+                        <td className="p-4 text-center pr-6">
+                          <div className="flex items-center justify-center gap-2">
+                            {hasRole(usuario, ['administrador']) && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEntradaModal(item)}
+                                  className="text-xs font-bold bg-[#E85D2F]/15 hover:bg-[#E85D2F] text-[#E85D2F] hover:text-white px-3 py-1.5 rounded-full transition-all cursor-pointer uppercase tracking-wider flex items-center gap-1 active:scale-95"
+                                >
+                                  <Icon path={ICONS.download} size={14} /> Entrada
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(item)}
+                                  className="text-xs font-bold bg-[#1C1C20] hover:bg-white/10 text-zinc-300 hover:text-white px-3 py-1.5 rounded-full transition-all cursor-pointer uppercase tracking-wider flex items-center gap-1 active:scale-95"
+                                >
+                                  <Icon path={ICONS.edit} size={14} /> Editar
+                                </button>
+                              </>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenMermaModal(item)}
+                              className="text-xs font-bold bg-[#EF4444]/15 hover:bg-[#EF4444] text-[#EF4444] hover:text-white px-3 py-1.5 rounded-full transition-all cursor-pointer uppercase tracking-wider flex items-center gap-1 active:scale-95"
+                            >
+                              <Icon path={ICONS.trash} size={14} /> Merma
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -419,62 +391,68 @@ export default function Inventario() {
               </table>
             </div>
           )}
-        </main>
+        </div>
+      </main>
 
-      {/* MODAL DE INGREDIENTE */}
+      {/* ─────────────────────────────────────────────────────────────
+         MODAL CREAR / EDITAR INSUMO — ULTRA PREMIUM DESIGN
+         ───────────────────────────────────────────────────────────── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 transition-all">
-          <div className="bg-[#09090A] border border-[#1F1F23] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            {/* Header del Modal */}
-            <div className="p-6 border-b border-[#1F1F23] flex items-center justify-between">
-              <h3 className="font-black tracking-wide text-lg text-white uppercase">
-                {isEditing ? 'Editar Ingrediente' : 'Agregar Ingrediente'}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setIsModalOpen(false)} />
+          
+          <div className="relative w-full max-w-lg bg-[#141416]/95 border border-[#242428] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_40px_rgba(232,93,47,0.15)] overflow-hidden animate-pop-in">
+            {/* Top Accent Gradient Bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-[#E85D2F] via-[#F59E0B] to-[#E85D2F]" />
+
+            {/* Header Modal */}
+            <div className="p-6 border-b border-[#242428] flex items-center justify-between bg-[#1C1C20]/80">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E85D2F]/20 to-transparent border border-[#E85D2F]/30 text-[#E85D2F] flex items-center justify-center shadow-inner">
+                  <Icon path={ICONS.box} size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-heading font-black text-white uppercase tracking-wider">
+                    {isEditing ? 'Editar Insumo' : 'Nuevo Insumo'}
+                  </h2>
+                  <p className="text-xs text-zinc-400 font-medium">Registra existencias de materia prima</p>
+                </div>
+              </div>
               <button 
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setIsEditing(false);
-                  setEditingId(null);
-                  setModalError('');
-                  setModalNombre('');
-                  setModalCantidad('');
-                  setModalUnidad('kg');
-                  setModalStockMinimo('');
-                }}
-                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
+                onClick={() => setIsModalOpen(false)} 
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {/* Formulario */}
-            <form onSubmit={handleCrearIngrediente} className="p-6 space-y-4">
+            {/* Form */}
+            <form onSubmit={handleCrearIngrediente} className="p-6 space-y-5">
               {modalError && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs font-bold text-destructive uppercase tracking-wide">
-                  ⚠️ {modalError}
+                <div className="bg-[#EF4444]/15 border border-[#EF4444]/30 rounded-xl p-3.5 text-xs font-bold text-[#EF4444] uppercase tracking-wide flex items-center gap-2">
+                  <Icon path={ICONS.trash} size={16} /> {modalError}
                 </div>
               )}
 
-              {/* Nombre */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Nombre del ingrediente
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
+                  Nombre del Insumo
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={modalNombre}
-                  onChange={(e) => setModalNombre(e.target.value)}
-                  placeholder="Ej. Carne de Res, Queso Cheddar"
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={modalNombre}
+                    onChange={(e) => setModalNombre(e.target.value)}
+                    placeholder="Ej. Carne de Res 200g, Queso Cheddar"
+                    className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#E85D2F] focus:ring-2 focus:ring-[#E85D2F]/20 text-white rounded-xl px-4 py-3.5 text-sm outline-none transition-all font-medium placeholder-zinc-600"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Cantidad */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                     {isEditing ? 'Cantidad Actual' : 'Cantidad Inicial'}
                   </label>
                   <input
@@ -486,40 +464,35 @@ export default function Inventario() {
                     value={modalCantidad}
                     onChange={(e) => setModalCantidad(e.target.value)}
                     placeholder="0"
-                    className={`w-full border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors ${
-                      isEditing ? 'bg-[#0E0E10] text-neutral-500 cursor-not-allowed border-dashed' : 'bg-[#141416]'
+                    className={`w-full border border-[#2D2D35] text-white rounded-xl px-4 py-3.5 text-sm outline-none font-bold ${
+                      isEditing ? 'bg-[#141416] text-zinc-500 cursor-not-allowed border-dashed' : 'bg-[#1C1C20] focus:border-[#E85D2F]'
                     }`}
                   />
-                  {isEditing && (
-                    <p className="text-[9px] font-semibold text-neutral-500 leading-tight mt-1">
-                      Ajustable solo vía movimientos
-                    </p>
-                  )}
                 </div>
 
-                {/* Unidad */}
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
                     Unidad de Medida
                   </label>
                   <select
                     value={modalUnidad}
                     onChange={(e) => setModalUnidad(e.target.value)}
-                    className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                    className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#E85D2F] focus:ring-2 focus:ring-[#E85D2F]/20 text-white rounded-xl px-4 py-3.5 text-sm outline-none font-medium cursor-pointer"
                   >
                     <option value="kg">kg (Kilogramo)</option>
                     <option value="g">g (Gramo)</option>
                     <option value="l">l (Litro)</option>
                     <option value="ml">ml (Mililitro)</option>
                     <option value="pza">pza (Pieza)</option>
+                    <option value="caja">caja (Caja)</option>
+                    <option value="botella">botella (Botella)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Stock Mínimo */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Stock Mínimo (Alerta)
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">
+                  Stock Mínimo (Alerta de Reorden)
                 </label>
                 <input
                   type="number"
@@ -528,35 +501,25 @@ export default function Inventario() {
                   min="0"
                   value={modalStockMinimo}
                   onChange={(e) => setModalStockMinimo(e.target.value)}
-                  placeholder="Ej. 5"
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                  placeholder="Ej. 10"
+                  className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#E85D2F] focus:ring-2 focus:ring-[#E85D2F]/20 text-white rounded-xl px-4 py-3.5 text-sm outline-none font-medium placeholder-zinc-600"
                 />
               </div>
 
-              {/* Acciones */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1F1F23]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#242428]">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setIsEditing(false);
-                    setEditingId(null);
-                    setModalError('');
-                    setModalNombre('');
-                    setModalCantidad('');
-                    setModalUnidad('kg');
-                    setModalStockMinimo('');
-                  }}
-                  className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white px-4 py-2.5 rounded-lg border border-[#1F1F23] bg-[#141416] hover:border-neutral-700 transition-colors cursor-pointer"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={modalSubmitting}
-                  className="text-xs font-bold uppercase tracking-wider text-white bg-[#E8530A] hover:bg-[#ff6214] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
+                  className="px-6 py-2.5 rounded-full text-xs font-heading font-black uppercase tracking-wider text-white bg-gradient-to-r from-[#E85D2F] to-[#d64e21] hover:from-[#f0683a] hover:to-[#e85d2f] shadow-[0_4px_20px_rgba(232,93,47,0.4)] transition-all cursor-pointer active:scale-95 disabled:opacity-50"
                 >
-                  {modalSubmitting ? (isEditing ? 'Guardando...' : 'Registrando...') : (isEditing ? 'Guardar' : 'Registrar')}
+                  {modalSubmitting ? 'Guardando...' : (isEditing ? 'Guardar Cambios' : 'Registrar Insumo')}
                 </button>
               </div>
             </form>
@@ -564,105 +527,171 @@ export default function Inventario() {
         </div>
       )}
 
-      {/* MODAL DE REGISTRAR ENTRADA */}
-      {isEntradaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 transition-all">
-          <div className="bg-[#09090A] border border-[#1F1F23] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            {/* Header del Modal */}
-            <div className="p-6 border-b border-[#1F1F23] flex items-center justify-between">
-              <h3 className="font-black tracking-wide text-lg text-white uppercase">
-                Registrar Entrada: {entradaNombre}
-              </h3>
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsEntradaModalOpen(false);
-                  setEntradaError('');
-                }}
-                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
+      {/* ─────────────────────────────────────────────────────────────
+         MODAL HISTORIAL DE MOVIMIENTOS — FUNCIONAL (CORREGIDO)
+         ───────────────────────────────────────────────────────────── */}
+      {isHistorialModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setIsHistorialModalOpen(false)} />
+          
+          <div className="relative w-full max-w-4xl bg-[#141416]/95 border border-[#242428] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-pop-in">
+            
+            {/* Header Movimientos */}
+            <div className="p-6 border-b border-[#242428] flex items-center justify-between bg-[#1C1C20] shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#E85D2F]/15 border border-[#E85D2F]/30 text-[#E85D2F] flex items-center justify-center">
+                  <Icon path={ICONS.clipboardList} size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-heading font-black text-white uppercase tracking-wider">
+                    Movimientos de Inventario
+                  </h2>
+                  <p className="text-xs text-zinc-400">Auditoría completa de entradas, mermas y salidas</p>
+                </div>
+              </div>
+
+              {/* Filtros por tipo */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHistorialFiltroTipo('')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase transition-colors ${
+                    historialFiltroTipo === '' ? 'bg-[#E85D2F] text-white' : 'bg-white/5 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setHistorialFiltroTipo('entrada')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase transition-colors ${
+                    historialFiltroTipo === 'entrada' ? 'bg-[#10B981] text-white' : 'bg-white/5 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Entradas
+                </button>
+                <button
+                  onClick={() => setHistorialFiltroTipo('merma')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase transition-colors ${
+                    historialFiltroTipo === 'merma' ? 'bg-[#EF4444] text-white' : 'bg-white/5 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  Mermas
+                </button>
+
+                <button 
+                  onClick={() => setIsHistorialModalOpen(false)} 
+                  className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center ml-4 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Formulario */}
-            <form onSubmit={handleSaveEntrada} className="p-6 space-y-4">
-              <p className="text-xs text-neutral-400 mb-2">
-                Suma existencias a tu inventario cuando recibas mercancía de tus proveedores.
-              </p>
-              {entradaError && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs font-bold text-destructive uppercase tracking-wide">
-                  ⚠️ {entradaError}
+            {/* Tabla del Historial */}
+            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+              {historialLoading ? (
+                <div className="p-12 text-center text-zinc-400 text-xs font-bold flex items-center justify-center gap-2">
+                  <Icon path={ICONS.refresh} size={20} className="animate-spin text-[#E85D2F]" /> Cargando movimientos...
                 </div>
+              ) : historialList.length === 0 ? (
+                <div className="text-center py-16 text-zinc-500 text-xs border border-dashed border-[#242428] rounded-xl p-8">
+                  Sin registro de movimientos para este filtro.
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#1C1C20] text-zinc-400 text-xs font-bold uppercase tracking-wider border-b border-[#242428]">
+                      <th className="px-4 py-3 rounded-tl-xl">Insumo</th>
+                      <th className="px-4 py-3">Tipo</th>
+                      <th className="px-4 py-3 text-right">Cantidad</th>
+                      <th className="px-4 py-3">Motivo / Referencia</th>
+                      <th className="px-4 py-3 text-right rounded-tr-xl">Fecha</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#242428] text-xs font-medium">
+                    {historialList.map((mov) => {
+                      const isEntrada = mov.tipo === 'entrada';
+                      const isMerma = mov.tipo === 'merma';
+                      return (
+                        <tr key={mov.id} className="hover:bg-white/5 transition-colors">
+                          <td className="px-4 py-3 font-bold text-white">{mov.ingrediente_nombre}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase border ${
+                              isEntrada 
+                                ? 'bg-[#10B981]/20 text-[#10B981] border-[#10B981]/30' 
+                                : isMerma 
+                                ? 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/30' 
+                                : 'bg-[#F59E0B]/20 text-[#F59E0B] border-[#F59E0B]/30'
+                            }`}>
+                              {mov.tipo}
+                            </span>
+                          </td>
+                          <td className={`px-4 py-3 text-right font-bold ${isEntrada ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+                            {isEntrada ? '+' : '-'}{mov.cantidad}
+                          </td>
+                          <td className="px-4 py-3 text-zinc-400 max-w-xs truncate">
+                            {mov.motivo || mov.referencia || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-right text-zinc-500 font-bold">
+                            {new Date(mov.fecha || mov.created_at).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
+            </div>
 
-              {/* Cantidad */}
+            <div className="p-4 border-t border-[#242428] bg-[#1C1C20] text-right shrink-0">
+              <button
+                onClick={() => setIsHistorialModalOpen(false)}
+                className="px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL REGISTRAR ENTRADA */}
+      {isEntradaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={() => setIsEntradaModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-[#141416] border border-[#242428] rounded-2xl shadow-2xl overflow-hidden animate-pop-in">
+            <div className="p-6 border-b border-[#242428] flex items-center justify-between bg-[#1C1C20]">
+              <h3 className="font-heading font-black text-lg text-white uppercase">
+                Entrada: {entradaNombre}
+              </h3>
+              <button onClick={() => setIsEntradaModalOpen(false)} className="text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <form onSubmit={handleSaveEntrada} className="p-6 space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Cantidad a agregar (Requerido)
-                </label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Cantidad Recibida</label>
                 <input
                   type="number"
                   step="0.001"
-                  required
                   min="0.001"
+                  required
                   value={entradaCantidad}
                   onChange={(e) => setEntradaCantidad(e.target.value)}
-                  placeholder="Ej. 10"
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                  className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#E85D2F] text-white rounded-xl px-4 py-3 text-sm outline-none font-medium"
+                  placeholder="0"
                 />
               </div>
-
-              {/* Proveedor */}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Proveedor / Referencia (Opcional)
-                </label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Proveedor (Opcional)</label>
                 <input
                   type="text"
                   value={entradaProveedor}
                   onChange={(e) => setEntradaProveedor(e.target.value)}
-                  placeholder="Ej. Distribuidora San Juan"
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                  className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#E85D2F] text-white rounded-xl px-4 py-3 text-sm outline-none font-medium"
+                  placeholder="Ej. Distribuidora Carnes SA"
                 />
               </div>
-
-              {/* Costo Unitario */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Costo Unitario (Opcional)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={entradaCosto}
-                    onChange={(e) => setEntradaCosto(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg pl-7 pr-3 py-2.5 text-sm outline-none transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1F1F23]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEntradaModalOpen(false);
-                    setEntradaError('');
-                  }}
-                  className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white px-4 py-2.5 rounded-lg border border-[#1F1F23] bg-[#141416] hover:border-neutral-700 transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={entradaSubmitting}
-                  className="text-xs font-bold uppercase tracking-wider text-white bg-[#E8530A] hover:bg-[#ff6214] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-                >
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#242428]">
+                <button type="button" onClick={() => setIsEntradaModalOpen(false)} className="px-5 py-2.5 rounded-full text-xs font-bold text-zinc-400">Cancelar</button>
+                <button type="submit" disabled={entradaSubmitting} className="px-6 py-2.5 rounded-full text-xs font-heading font-bold text-white bg-[#10B981] hover:bg-[#059669]">
                   {entradaSubmitting ? 'Guardando...' : 'Registrar Entrada'}
                 </button>
               </div>
@@ -670,177 +699,50 @@ export default function Inventario() {
           </div>
         </div>
       )}
-      {/* MODAL DE REGISTRAR MERMA */}
+
+      {/* MODAL MERMA */}
       {isMermaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 transition-all">
-          <div className="bg-[#09090A] border border-[#1F1F23] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[#1F1F23] flex items-center justify-between">
-              <h3 className="font-black tracking-wide text-lg text-white uppercase">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-md" onClick={() => setIsMermaModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-[#141416] border border-[#242428] rounded-2xl shadow-2xl overflow-hidden animate-pop-in">
+            <div className="p-6 border-b border-[#242428] flex items-center justify-between bg-[#1C1C20]">
+              <h3 className="font-heading font-black text-lg text-[#EF4444] uppercase">
                 Registrar Merma: {mermaNombre}
               </h3>
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsMermaModalOpen(false);
-                  setMermaError('');
-                }}
-                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
+              <button onClick={() => setIsMermaModalOpen(false)} className="text-zinc-400 hover:text-white">✕</button>
             </div>
             <form onSubmit={handleSaveMerma} className="p-6 space-y-4">
-              <p className="text-xs text-neutral-400 mb-2">
-                Descuenta ingredientes que se echaron a perder, caducaron o se dañaron por accidente.
-              </p>
-              {mermaError && (
-                <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs font-bold text-destructive uppercase tracking-wide">
-                  ⚠️ {mermaError}
-                </div>
-              )}
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Cantidad a mermar (Requerido)
-                </label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Cantidad Perdida</label>
                 <input
                   type="number"
                   step="0.001"
-                  required
                   min="0.001"
+                  required
                   value={mermaCantidad}
                   onChange={(e) => setMermaCantidad(e.target.value)}
-                  placeholder="Ej. 2"
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                  className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#EF4444] text-white rounded-xl px-4 py-3 text-sm outline-none font-medium"
+                  placeholder="0"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest block">
-                  Motivo de la merma (Requerido)
-                </label>
-                <input
-                  type="text"
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider block">Motivo de Merma</label>
+                <textarea
                   required
                   value={mermaMotivo}
                   onChange={(e) => setMermaMotivo(e.target.value)}
-                  placeholder="Ej. Daño físico, Caducidad..."
-                  className="w-full bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-2.5 text-sm outline-none transition-colors"
+                  className="w-full bg-[#1C1C20] border border-[#2D2D35] focus:border-[#EF4444] text-white rounded-xl px-4 py-3 text-sm outline-none font-medium"
+                  placeholder="Ej. Expiración, empaque dañado, caída..."
+                  rows={2}
                 />
               </div>
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1F1F23]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMermaModalOpen(false);
-                    setMermaError('');
-                  }}
-                  className="text-xs font-bold uppercase tracking-wider text-neutral-400 hover:text-white px-4 py-2.5 rounded-lg border border-[#1F1F23] bg-[#141416] hover:border-neutral-700 transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={mermaSubmitting}
-                  className="text-xs font-bold uppercase tracking-wider text-white bg-[#E8530A] hover:bg-[#ff6214] disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2.5 rounded-lg transition-colors cursor-pointer"
-                >
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#242428]">
+                <button type="button" onClick={() => setIsMermaModalOpen(false)} className="px-5 py-2.5 rounded-full text-xs font-bold text-zinc-400">Cancelar</button>
+                <button type="submit" disabled={mermaSubmitting} className="px-6 py-2.5 rounded-full text-xs font-heading font-bold text-white bg-[#EF4444] hover:bg-[#dc2626]">
                   {mermaSubmitting ? 'Guardando...' : 'Registrar Merma'}
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE HISTORIAL DE MOVIMIENTOS */}
-      {isHistorialModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 transition-all">
-          <div className="bg-[#09090A] border border-[#1F1F23] rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
-            <div className="p-6 border-b border-[#1F1F23] flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
-              <h3 className="font-black tracking-wide text-lg text-white uppercase">
-                Historial: {historialNombre}
-              </h3>
-              <div className="flex items-center gap-3">
-                <select
-                  value={historialFiltroTipo}
-                  onChange={(e) => setHistorialFiltroTipo(e.target.value)}
-                  className="bg-[#141416] border border-[#1F1F23] focus:border-primary text-neutral-200 rounded-lg px-3 py-1.5 text-xs font-bold uppercase outline-none transition-colors cursor-pointer"
-                >
-                  <option value="">Todos los tipos</option>
-                  <option value="entrada">Entradas</option>
-                  <option value="salida">Salidas</option>
-                  <option value="merma">Mermas</option>
-                  <option value="ajuste">Ajustes</option>
-                </select>
-                <button 
-                  type="button"
-                  onClick={() => setIsHistorialModalOpen(false)}
-                  className="text-neutral-500 hover:text-white transition-colors cursor-pointer px-2"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-            <div className="p-6 flex-1 overflow-y-auto">
-              {historialError && (
-                <div className="mb-4 bg-destructive/10 border border-destructive/30 rounded-xl p-3 text-xs font-bold text-destructive uppercase tracking-wide">
-                  ⚠️ {historialError}
-                </div>
-              )}
-              {historialLoading ? (
-                <div className="flex flex-col items-center justify-center py-10 text-neutral-500 gap-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-t-transparent border-primary"></div>
-                  <p className="text-xs font-bold uppercase tracking-widest animate-pulse">Cargando...</p>
-                </div>
-              ) : historialList.length === 0 ? (
-                <div className="border border-dashed border-[#1F1F23] rounded-xl py-10 flex flex-col items-center justify-center text-center text-neutral-500">
-                  <span className="text-2xl mb-2">📊</span>
-                  <p className="text-xs font-bold uppercase tracking-wider">Sin movimientos registrados</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto bg-[#141416] border border-[#1F1F23] rounded-xl">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#1F1F23] text-[10px] font-bold text-neutral-500 uppercase tracking-widest bg-[#09090A]">
-                        <th className="p-3 pl-4">Fecha</th>
-                        <th className="p-3">Ingrediente</th>
-                        <th className="p-3">Tipo</th>
-                        <th className="p-3 text-right">Cantidad</th>
-                        <th className="p-3 pr-4">Motivo / Referencia</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#1F1F23] text-xs">
-                      {historialList.map((mov) => {
-                        let rowClass = 'text-neutral-300';
-                        if (mov.tipo === 'entrada') rowClass = 'text-success bg-success/5';
-                        else if (mov.tipo === 'salida' || mov.tipo === 'merma') rowClass = 'text-destructive bg-destructive/5';
-                        
-                        return (
-                          <tr key={mov.id} className={`hover:bg-[#1C1C1E] transition-colors ${rowClass}`}>
-                            <td className="p-3 pl-4 font-medium text-neutral-400">
-                              {new Date(mov.fecha).toLocaleString('es-MX', {
-                                dateStyle: 'short',
-                                timeStyle: 'short',
-                              })}
-                            </td>
-                            <td className="p-3 font-bold uppercase tracking-wider text-white">
-                              {mov.ingrediente_nombre}
-                            </td>
-                            <td className="p-3 font-bold uppercase tracking-wider">
-                              {mov.tipo}
-                            </td>
-                            <td className="p-3 text-right font-black">
-                              {mov.tipo === 'entrada' ? '+' : '-'}{mov.cantidad}
-                            </td>
-                            <td className="p-3 pr-4 text-neutral-400">
-                              {mov.motivo || mov.referencia || '-'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}

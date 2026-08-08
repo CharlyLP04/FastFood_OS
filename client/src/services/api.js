@@ -1,47 +1,95 @@
-import { getToken, handleSessionExpired } from '../utils/auth';
+/**
+ * api.js — Cliente HTTP central para A La Burger OS (HU-5)
+ *
+ * CAMBIOS HU-5:
+ *  - credentials: 'include' en TODOS los requests (las cookies httpOnly viajan así)
+ *  - Eliminado el header Authorization manual (el JWT ahora va en cookie)
+ *  - Refresh automático: si recibe 401 con cookie presente, intenta
+ *    POST /api/auth/refresh y reintenta el request original una vez.
+ *  - Si el refresh también falla, llama handleSessionExpired y redirige a login.
+ */
+
+import { handleSessionExpired } from '../utils/auth';
+import { refreshToken } from './authService';
 
 const API_URL = import.meta.env.PROD
   ? 'https://alaburger-os-2fyu.onrender.com/api'
   : 'http://localhost:3000/api';
 
-function isTokenAuthError(status, data, hadToken) {
-  if (!hadToken) return false;
+// ─────────────────────────────────────────────────────────────────────────────
+// Guard anti-refresh-loop: evita que múltiples requests en vuelo simultáneos
+// disparen varios refresh en paralelo cuando el access_token expira.
+// ─────────────────────────────────────────────────────────────────────────────
+let isRefreshing = false;
+let refreshSubscribers = []; // callbacks que esperan el resultado del refresh
 
-  if (status === 401) return true;
-
-  if (status === 403) {
-    const errorCode = data?.error?.toLowerCase?.() ?? '';
-    return errorCode.includes('token');
-  }
-
-  return false;
+function subscribeToRefresh(cb) {
+  refreshSubscribers.push(cb);
 }
 
-async function apiFetch(path, options = {}) {
+function resolveRefreshSubscribers(success) {
+  refreshSubscribers.forEach((cb) => cb(success));
+  refreshSubscribers = [];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * apiFetch — wrapper central para todos los requests al backend.
+ *
+ * @param {string} path     - Ruta relativa, e.g. '/productos'
+ * @param {object} options  - Opciones de fetch (method, body, headers adicionales)
+ * @param {boolean} _isRetry - Interno: evita bucle de refresh infinito
+ */
+async function apiFetch(path, options = {}, _isRetry = false) {
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
 
-  const token = getToken();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers,
+    credentials: 'include', // HU-5: cookies httpOnly viajan en todos los requests
   });
 
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    if (isTokenAuthError(response.status, data, Boolean(token))) {
-      handleSessionExpired(
-        data.mensaje || 'Tu sesión ha expirado. Inicia sesión nuevamente.'
-      );
+  // ── Manejo de 401 con refresh automático ───────────────────────────────────
+  if (response.status === 401 && !_isRetry) {
+    // Si ya hay un refresh en curso, esperar su resultado en vez de disparar otro
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        subscribeToRefresh((success) => {
+          if (success) {
+            resolve(apiFetch(path, options, true));
+          } else {
+            reject(new Error('Sesión expirada'));
+          }
+        });
+      });
     }
 
+    isRefreshing = true;
+
+    try {
+      await refreshToken(); // POST /api/auth/refresh — emite nueva cookie access_token
+      isRefreshing = false;
+      resolveRefreshSubscribers(true);
+      // Reintentar el request original con la nueva cookie
+      return apiFetch(path, options, true);
+    } catch {
+      isRefreshing = false;
+      resolveRefreshSubscribers(false);
+      // El refresh también falló → sesión expirada definitivamente
+      handleSessionExpired('Tu sesión ha expirado. Inicia sesión nuevamente.');
+      const error = new Error('Sesión expirada');
+      error.status = 401;
+      throw error;
+    }
+  }
+
+  if (!response.ok) {
     const error = new Error(data.mensaje || data.error || 'Error en la solicitud');
     error.status = response.status;
     error.data = data;
@@ -51,7 +99,13 @@ async function apiFetch(path, options = {}) {
   return data;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Endpoints exportados
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function login(username, password) {
+  // Login no usa apiFetch porque maneja su propio flujo de errores
+  // y no necesita el refresh automático (aún no hay sesión)
   return apiFetch('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ username, password }),
@@ -190,9 +244,7 @@ export async function getCategoriasProducto() {
   );
 }
 
-// ==========================================
-// 🍔 PEDIDOS (ORDERS)
-// ==========================================
+// ── Pedidos ──────────────────────────────────────────────────────────────────
 export function crearPedido(payload) {
   return apiFetch('/pedidos', {
     method: 'POST',
@@ -211,6 +263,7 @@ export function updatePedidoStatus(id, estado) {
   });
 }
 
+// ── Inventario ───────────────────────────────────────────────────────────────
 export function getInventario(stockBajo = false) {
   const query = stockBajo ? '?stock_bajo=true' : '';
   return apiFetch(`/inventario${query}`);
@@ -246,7 +299,7 @@ export function getMovimientos(id, tipo = '', fechaDesde = '', fechaHasta = '') 
   if (tipo) params.append('tipo', tipo);
   if (fechaDesde) params.append('fecha_desde', fechaDesde);
   if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-  
+
   const query = params.toString();
   return apiFetch(`/inventario/${id}/movimientos${query ? '?' + query : ''}`);
 }
@@ -263,11 +316,12 @@ export function getTodosLosMovimientos(tipo = '', fechaDesde = '', fechaHasta = 
   if (tipo) params.append('tipo', tipo);
   if (fechaDesde) params.append('fecha_desde', fechaDesde);
   if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-  
+
   const query = params.toString();
   return apiFetch(`/inventario/movimientos${query ? '?' + query : ''}`);
 }
 
+// ── Usuarios ──────────────────────────────────────────────────────────────────
 export function getUsuarios() {
   return apiFetch('/usuarios');
 }
@@ -296,6 +350,7 @@ export function toggleUsuarioStatus(id) {
   });
 }
 
+// ── Configuración ─────────────────────────────────────────────────────────────
 export function getConfiguraciones() {
   return apiFetch('/configuracion');
 }
@@ -307,14 +362,13 @@ export function updateConfiguraciones(payload) {
   });
 }
 
+// ── Búsqueda ─────────────────────────────────────────────────────────────────
 export function globalSearch(query) {
   const params = new URLSearchParams({ q: query });
   return apiFetch(`/search?${params.toString()}`);
 }
 
-// ==========================================
-// 📊 DASHBOARD METRICS
-// ==========================================
-export function getDashboardMetrics() {
-  return apiFetch('/dashboard/metrics');
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export function getDashboardMetrics(period = 'hoy') {
+  return apiFetch(`/dashboard/metrics?period=${encodeURIComponent(period)}`);
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import KDS from './pages/KDS';
 import WaiterApp from './pages/WaiterApp';
@@ -14,28 +14,38 @@ import Configuracion from './pages/Configuracion';
 import ModuloEnDesarrollo from './pages/ModuloEnDesarrollo';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
-import { getDefaultRouteForRole, getUsuario, isAuthenticated } from './utils/auth';
-
-
-
 import ErrorBoundary from './components/ErrorBoundary';
+import { useAuth } from './hooks/useAuth';
+import { getDefaultRouteForRole } from './utils/auth';
 
+/**
+ * AuthenticatedRedirect — redirige al usuario a su ruta por rol.
+ * Solo se renderiza cuando ya sabemos que hay sesión (usuario !== null).
+ */
 function AuthenticatedRedirect() {
-  const usuario = getUsuario();
+  const { usuario } = useAuth();
   return <Navigate to={getDefaultRouteForRole(usuario?.rol)} replace />;
 }
 
+/**
+ * PublicRoute — solo accesible si NO hay sesión activa.
+ * Mientras loading=true muestra null para evitar flash de redirección.
+ */
 function PublicRoute({ children }) {
-  if (isAuthenticated()) {
-    return <AuthenticatedRedirect />;
-  }
+  const { usuario, loading } = useAuth();
+  if (loading) return null;
+  if (usuario) return <AuthenticatedRedirect />;
   return children;
 }
 
+/**
+ * CatchAllRoute — manejo de rutas desconocidas.
+ * Espera a que cargue la sesión antes de decidir destino.
+ */
 function CatchAllRoute() {
-  if (isAuthenticated()) {
-    return <AuthenticatedRedirect />;
-  }
+  const { usuario, loading } = useAuth();
+  if (loading) return null;
+  if (usuario) return <AuthenticatedRedirect />;
   return <Navigate to="/login" replace />;
 }
 
@@ -48,11 +58,11 @@ export default function App() {
           path="/login"
           element={<PublicRoute><Login /></PublicRoute>}
         />
-        
-        {/* Criterio de Aceptación: Pantalla de Acceso Denegado 403 */}
+
+        {/* Pantalla de Acceso Denegado 403 */}
         <Route path="/403" element={<Forbidden />} />
 
-        {/* 🔴 RUTAS ADMINISTRATIVAS ENVUELTAS EN EL LAYOUT GLOBAL */}
+        {/* RUTAS ADMINISTRATIVAS */}
         <Route
           element={
             <ProtectedRoute allowedRoles={['administrador', 'gerente']}>
@@ -69,7 +79,7 @@ export default function App() {
           <Route path="/reportes" element={<ModuloEnDesarrollo modulo="Reportes" />} />
         </Route>
 
-        {/* 🍳 PANTALLA DE COCINA (KDS) */}
+        {/* PANTALLA DE COCINA (KDS) */}
         <Route
           path="/cocina"
           element={
@@ -79,7 +89,7 @@ export default function App() {
           }
         />
 
-        {/* 🛒 PANTALLA DE MESEROS (WAITER APP) */}
+        {/* PANTALLA DE MESEROS */}
         <Route
           path="/mesero"
           element={
@@ -89,7 +99,7 @@ export default function App() {
           }
         />
 
-        {/* 💵 PANTALLA DE CAJERO (CAJA APP) */}
+        {/* PANTALLA DE CAJERO */}
         <Route
           path="/caja"
           element={
@@ -99,11 +109,8 @@ export default function App() {
           }
         />
 
-        {/* MANEJO DE RUTAS INEXISTENTES (FALLBACK RESILIENTE) */}
-        <Route
-          path="*"
-          element={<CatchAllRoute />}
-        />
+        {/* FALLBACK */}
+        <Route path="*" element={<CatchAllRoute />} />
       </Routes>
     </ErrorBoundary>
   );

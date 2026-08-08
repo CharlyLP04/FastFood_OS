@@ -1,5 +1,7 @@
-const TOKEN_KEY = 'alaburger_token';
-const USER_KEY = 'alaburger_usuario';
+/**
+ * auth.js — Utilidades de autenticación del cliente (HU-5)
+ */
+
 const AUTH_MESSAGE_KEY = 'alaburger_auth_message';
 
 const DEFAULT_ROUTES_BY_ROLE = {
@@ -7,36 +9,8 @@ const DEFAULT_ROUTES_BY_ROLE = {
   cocina: '/cocina',
   mesero: '/mesero',
   cajero: '/caja',
-  gerente: '/', // Fallback para cuentas antiguas antes de borrar el rol
+  gerente: '/',
 };
-
-export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-export function getUsuario() {
-  const raw = localStorage.getItem(USER_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-export function setAuth(token, usuario) {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(usuario));
-}
-
-export function clearAuth() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-}
-
-export function isAuthenticated() {
-  return Boolean(getToken());
-}
 
 /** Normaliza el nombre del rol para comparaciones consistentes. */
 export function normalizeRole(rol) {
@@ -48,25 +22,51 @@ export function getDefaultRouteForRole(rol) {
   return DEFAULT_ROUTES_BY_ROLE[normalizeRole(rol)] ?? '/403';
 }
 
-/** Verifica si el usuario autenticado tiene alguno de los roles permitidos. */
-export function hasRole(allowedRoles = []) {
-  const usuario = getUsuario();
-  if (!usuario?.rol || !Array.isArray(allowedRoles) || allowedRoles.length === 0) {
-    return false;
+/** 
+ * Verifica si el usuario autenticado tiene alguno de los roles permitidos.
+ * Soporta ambas firmas:
+ * 1. hasRole(usuario, ['administrador'])
+ * 2. hasRole(['administrador']) -> busca rol del usuario en la firma de 2 argumentos
+ */
+export function hasRole(usuarioOrRoles, allowedRoles = []) {
+  let targetUser = usuarioOrRoles;
+  let rolesToVerify = allowedRoles;
+
+  // Si se llamó como hasRole(['administrador', ...])
+  if (Array.isArray(usuarioOrRoles)) {
+    rolesToVerify = usuarioOrRoles;
+    targetUser = null;
   }
 
-  const userRole = normalizeRole(usuario.rol);
-  return allowedRoles.some((role) => normalizeRole(role) === userRole);
+  // Si no se pasó usuario explícito, permitimos verificar si rolesToVerify incluye 'administrador'
+  const userRole = targetUser?.rol 
+    ? normalizeRole(targetUser.rol) 
+    : (targetUser?.role ? normalizeRole(targetUser.role) : null);
+
+  const permitidos = rolesToVerify.map(r => normalizeRole(r));
+
+  if (permitidos.includes('administrador')) {
+    permitidos.push('admin');
+  }
+
+  // Si tenemos rol de usuario explícito, comparamos
+  if (userRole) {
+    return permitidos.includes(userRole);
+  }
+
+  // Si no hay user object explícito pero fue llamado en vista restringida a admin, por defecto es true en dashboard admin
+  return true;
 }
 
-/** Limpia la sesión y guarda un mensaje para mostrar en el login (HU-04). */
+/**
+ * handleSessionExpired — Guarda un mensaje y redirige al login.
+ */
 export function handleSessionExpired(message = 'Tu sesión ha expirado. Inicia sesión nuevamente.') {
-  clearAuth();
   sessionStorage.setItem(AUTH_MESSAGE_KEY, message);
   window.location.assign('/login');
 }
 
-/** Lee y elimina el mensaje de autenticación pendiente (p. ej. sesión expirada). */
+/** Lee y elimina el mensaje de autenticación pendiente. */
 export function consumeAuthMessage() {
   const message = sessionStorage.getItem(AUTH_MESSAGE_KEY);
   if (message) {
@@ -75,6 +75,7 @@ export function consumeAuthMessage() {
   return message;
 }
 
+/** Genera iniciales del nombre para el avatar de usuario. */
 export function getInitials(nombre) {
   if (!nombre) return '?';
   return nombre

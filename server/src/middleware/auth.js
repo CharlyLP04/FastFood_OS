@@ -3,50 +3,47 @@ const jwt = require('jsonwebtoken');
 
 /**
  * verificarToken — protege rutas que requieren sesión iniciada.
- * Extrae el token del header Authorization: Bearer <token>
- * y lo valida con la clave secreta JWT_SECRET del entorno.
+ *
+ * HU-5: Lee el JWT desde la cookie httpOnly `access_token`.
+ * En desarrollo (NODE_ENV !== 'production') acepta también el header
+ * `Authorization: Bearer <token>` como fallback para facilitar
+ * el uso con curl / Postman sin necesidad de gestionar cookies.
+ *
+ * Prioridad: cookie > Authorization header
  */
 const verificarToken = (req, res, next) => {
-  // Obtener el header de autorización
-  const encabezadoAutorizacion = req.headers['authorization'];
+  // 1. Intentar leer desde cookie httpOnly (ruta principal, producción y dev)
+  let token = req.cookies?.access_token ?? null;
 
-  // Verificar que el header exista
-  if (!encabezadoAutorizacion) {
+  // 2. Fallback a Authorization: Bearer estrictamente en entorno 'development'
+  if (!token && process.env.NODE_ENV === 'development') {
+    const encabezado = req.headers['authorization'];
+    if (encabezado) {
+      const partes = encabezado.split(' ');
+      if (partes.length === 2 && partes[0] === 'Bearer') {
+        token = partes[1];
+      }
+    }
+  }
+
+  if (!token) {
     return res.status(401).json({
       error: 'Acceso denegado',
       mensaje: 'No se proporcionó un token de autenticación.',
     });
   }
 
-  // El formato esperado es: "Bearer <token>"
-  const partes = encabezadoAutorizacion.split(' ');
-  if (partes.length !== 2 || partes[0] !== 'Bearer') {
-    return res.status(401).json({
-      error: 'Token inválido',
-      mensaje: 'El formato del token debe ser: Bearer <token>',
-    });
-  }
-
-  const token = partes[1];
-
   try {
-    // Verificar y decodificar el token
     const cargaUtil = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Adjuntar los datos del usuario al objeto de solicitud
     req.usuario = cargaUtil;
-
-    // Continuar con el siguiente middleware o controlador
     next();
   } catch (error) {
-    // Manejar errores comunes de JWT
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         error: 'Token expirado',
         mensaje: 'La sesión ha expirado. Por favor, inicia sesión nuevamente.',
       });
     }
-
     return res.status(403).json({
       error: 'Token inválido',
       mensaje: 'El token proporcionado no es válido.',

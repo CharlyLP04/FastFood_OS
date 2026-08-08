@@ -1,27 +1,36 @@
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { hasRole, isAuthenticated } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
+import { hasRole } from '../utils/auth';
 
 /**
- * Protege rutas verificando autenticación y, opcionalmente, roles permitidos (HU-03).
- * Si el usuario no tiene el rol requerido, lo manda directo a la pantalla de Acceso Denegado (403).
- * 
- * @param {object} props
- * @param {React.ReactNode} [props.children] - Componente hijo opcional (para uso directo)
- * @param {string[]} [props.allowedRoles] - Roles autorizados para acceder a la ruta
+ * ProtectedRoute — protege rutas verificando autenticación y roles (HU-5)
+ *
+ * Flujo:
+ *  1. Si loading=true  → muestra null (el AuthContext aún verifica /me)
+ *  2. Si !usuario       → redirige a /login
+ *  3. Si rol no autorizado → redirige a /403
+ *  4. Si todo OK       → renderiza children o <Outlet>
+ *
+ * @param {React.ReactNode} [children] - Componente hijo opcional
+ * @param {string[]} [allowedRoles]    - Roles autorizados para la ruta
  */
 export default function ProtectedRoute({ children, allowedRoles }) {
   const location = useLocation();
+  const { usuario, loading } = useAuth();
 
-  // 1. Criterio de Aceptación: Si no está autenticado, va al login guardando el origen
-  if (!isAuthenticated()) {
+  // Mientras se verifica la sesión con /api/auth/me, no hacer nada
+  // (evita flash de redirección a /login en usuarios con sesión válida)
+  if (loading) return null;
+
+  // Sin sesión activa → login
+  if (!usuario) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  // 2. Criterio de Aceptación: Si tiene un rol no autorizado -> Directo al /403 sin escalas
-  if (allowedRoles?.length > 0 && !hasRole(allowedRoles)) {
+  // Rol no autorizado → 403
+  if (allowedRoles?.length > 0 && !hasRole(usuario, allowedRoles)) {
     return <Navigate to="/403" replace state={{ from: location.pathname }} />;
   }
 
-  // Si pasa las validaciones, renderiza los hijos directos o el Outlet del layout
   return children ? children : <Outlet />;
 }

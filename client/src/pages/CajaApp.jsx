@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, ICONS } from '../components/ui/Icon';
-import { getUsuario, clearAuth } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
 import { getPedidos, updatePedidoStatus } from '../services/api';
 import { Toast } from '../components/ui/Toast';
+import { CardSkeleton } from '../components/ui/Skeleton';
 
 export default function CajaApp() {
   const navigate = useNavigate();
-  const usuario = getUsuario();
+  const { usuario, logout } = useAuth();
+
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ export default function CajaApp() {
 
   useEffect(() => {
     fetchPedidos();
-    const interval = setInterval(fetchPedidos, 10000); // Polling cada 10 segundos
+    const interval = setInterval(fetchPedidos, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -45,10 +47,6 @@ export default function CajaApp() {
     }
   };
 
-  const showToast = (message, type = 'info') => {
-    setToast({ message, type });
-  };
-
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000);
@@ -56,48 +54,47 @@ export default function CajaApp() {
     }
   }, [toast]);
 
-  // Filtrar pedidos que no estén 'pagado' o 'cancelado' (o según las reglas del negocio)
-  // Para la caja, es útil ver todos los activos, especialmente 'listo' y 'pendiente'.
   const activos = pedidos.filter(p => !['pagado', 'cancelado'].includes(p.estado));
   
-  // Total de ventas del día (basado en los pagados hoy, para métricas rápidas)
   const ventasHoy = pedidos
     .filter(p => p.estado === 'pagado')
     .reduce((sum, p) => sum + (p.total || 0), 0);
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case 'listo': return 'bg-success/20 text-success border-success';
-      case 'en_preparacion': return 'bg-primary/20 text-primary border-primary';
-      case 'pendiente': return 'bg-secondary/20 text-secondary border-secondary';
-      default: return 'bg-neutral-800 text-neutral-400 border-neutral-700';
+      case 'listo': return 'bg-[#7A8450]/20 text-[#7A8450] border-[#7A8450]/30';
+      case 'en_preparacion': return 'bg-[#E85D2F]/20 text-[#E85D2F] border-[#E85D2F]/30';
+      case 'pendiente': return 'bg-[#D9A441]/20 text-[#D9A441] border-[#D9A441]/30';
+      default: return 'bg-zinc-800 text-zinc-400 border-zinc-700';
     }
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#0A0A0B] text-white flex flex-col font-body animate-fade-in">
       {/* Header Caja */}
-      <header className="flex justify-between items-center p-6 border-b border-[#1E1E1E]">
+      <header className="flex justify-between items-center p-6 border-b border-[#242428] bg-[#141416] text-white shadow-sm">
         <div className="flex items-center gap-4">
           <Link to={usuario?.rol === 'administrador' ? '/' : '/caja'} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="bg-primary text-white font-bold w-8 h-8 rounded flex items-center justify-center text-sm">C</div>
-            <h1 className="font-bold tracking-widest text-lg uppercase text-white">Burger OS <span className="text-muted-foreground ml-2">/ Caja Central</span></h1>
+            <div className="bg-[#E85D2F]/15 border border-[#E85D2F]/30 p-2 rounded-xl text-[#E85D2F] flex items-center justify-center">
+              <Icon path={ICONS.burger} size={20} />
+            </div>
+            <h1 className="font-heading font-black tracking-wider text-base uppercase text-white">BURGER OS <span className="text-zinc-500 font-normal ml-2">/ Caja Central</span></h1>
           </Link>
           {usuario?.rol === 'administrador' && (
-            <Link to="/" className="text-xs bg-[#1E1E1E] hover:bg-neutral-800 border border-[#2A2A2F] text-neutral-300 font-bold px-3 py-1.5 rounded-lg transition-colors ml-2 uppercase tracking-wider">
+            <Link to="/" className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-full transition-colors ml-2 uppercase tracking-wider active:scale-95">
               Volver al Panel
             </Link>
           )}
         </div>
         <div className="flex items-center gap-6">
           <div className="text-right hidden sm:block">
-            <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase mb-1">Corte Actual</p>
-            <p className="text-success font-black text-xl leading-none">${ventasHoy.toFixed(2)}</p>
+            <p className="text-[10px] text-zinc-400 font-bold tracking-wider uppercase mb-0.5">Corte Actual</p>
+            <p className="text-[#7A8450] font-heading font-black text-xl leading-none">${ventasHoy.toFixed(2)}</p>
           </div>
-          <div className="h-8 w-px bg-[#1E1E1E] hidden sm:block"></div>
+          <div className="h-8 w-px bg-[#242428] hidden sm:block"></div>
           <button 
-            onClick={() => { clearAuth(); navigate('/login'); }}
-            className="text-xs text-destructive hover:text-white bg-destructive/10 hover:bg-destructive font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+            onClick={async () => { await logout(); navigate('/login'); }}
+            className="text-xs text-[#C1272D] hover:text-white bg-[#C1272D]/20 hover:bg-[#C1272D] font-bold px-4 py-2 rounded-full transition-colors cursor-pointer uppercase tracking-wider"
           >
             Salir
           </button>
@@ -105,81 +102,85 @@ export default function CajaApp() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-end mb-6">
           <div>
-            <h2 className="text-2xl font-black uppercase tracking-tight">Pedidos Activos</h2>
-            <p className="text-sm text-muted-foreground mt-1">Selecciona un pedido para registrar el pago o actualizar su estado.</p>
+            <h2 className="text-2xl font-heading font-black text-white uppercase tracking-tight">Pedidos Pendientes de Cobro</h2>
+            <p className="text-xs text-zinc-400 mt-1 font-medium">Selecciona una orden para registrar el pago o actualizar estado.</p>
           </div>
           <button 
             onClick={fetchPedidos}
-            className="text-xs bg-card hover:bg-[#1E1E1E] border border-[#1E1E1E] text-white font-bold px-4 py-2 rounded-lg transition-colors uppercase tracking-wider flex items-center gap-2"
+            className="text-xs bg-[#141416] hover:bg-[#1C1C20] border border-[#242428] text-white font-bold px-4 py-2 rounded-full transition-all duration-200 uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
           >
             <Icon path={ICONS.refresh} size={14} /> Actualizar
           </button>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         ) : error ? (
-          <div className="bg-destructive/10 border border-destructive/30 text-destructive p-4 rounded-xl text-center font-bold">
+          <div className="bg-[#C1272D]/15 border border-[#C1272D] text-[#C1272D] p-6 rounded-xl text-center font-bold animate-fade-in">
             {error}
           </div>
         ) : activos.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed border-[#1E1E1E] rounded-2xl">
-            <Icon path={ICONS.check} size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-xl font-bold text-neutral-400 uppercase tracking-widest">Todo al día</h3>
-            <p className="text-sm text-neutral-600 mt-2">No hay pedidos pendientes de cobro.</p>
+          <div className="text-center py-20 bg-[#141416] rounded-xl border border-dashed border-[#242428] shadow-sm p-8 max-w-lg mx-auto animate-fade-in flex flex-col items-center">
+            <div className="w-14 h-14 rounded-full bg-[#7A8450]/15 text-[#7A8450] flex items-center justify-center mb-3">
+              <Icon path={ICONS.check} size={28} />
+            </div>
+            <h3 className="text-xl font-heading font-bold text-white uppercase tracking-wider">Caja al día</h3>
+            <p className="text-xs text-zinc-400 mt-1 font-medium">No hay pedidos pendientes de cobro en este momento. Las nuevas órdenes listas aparecerán aquí automáticamente.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 animate-fade-in">
             {activos.map(pedido => (
-              <div key={pedido.id} className="bg-card border border-[#1E1E1E] rounded-2xl p-6 flex flex-col shadow-lg relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-1 ${pedido.estado === 'listo' ? 'bg-success' : 'bg-primary'}`}></div>
+              <div key={pedido.id} className="bg-[#141416] border border-[#242428] rounded-xl p-6 flex flex-col shadow-md hover:shadow-lg transition-all duration-200 relative overflow-hidden">
+                <div className={`absolute top-0 left-0 w-full h-1 ${pedido.estado === 'listo' ? 'bg-[#7A8450]' : 'bg-[#E85D2F]'}`}></div>
                 
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-2xl font-black leading-none">#{pedido.id}</h3>
-                    <p className="text-xs font-bold text-muted-foreground mt-2 uppercase tracking-widest">
+                    <h3 className="text-2xl font-heading font-black text-white leading-none">#{pedido.id}</h3>
+                    <p className="text-xs font-bold text-zinc-400 mt-1.5 uppercase tracking-wider">
                       {pedido.mesa_numero ? `Mesa ${pedido.mesa_numero}` : 'Mostrador'}
                     </p>
                   </div>
-                  <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${getStatusStyle(pedido.estado)}`}>
+                  <div className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${getStatusStyle(pedido.estado)}`}>
                     {pedido.estado}
                   </div>
                 </div>
 
                 <div className="flex-1 mt-2 mb-6">
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {pedido.items && pedido.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm items-center border-b border-[#1E1E1E] pb-2 last:border-0 last:pb-0">
-                        <span className="font-bold text-neutral-300">
-                          <span className="text-primary mr-2">{item.cantidad}x</span> 
+                      <div key={idx} className="flex justify-between text-xs items-center border-b border-[#242428] pb-2 last:border-0 last:pb-0">
+                        <span className="font-bold text-white">
+                          <span className="text-[#E85D2F] mr-2">{item.cantidad}x</span> 
                           {item.producto_nombre}
                         </span>
-                        <span className="text-neutral-500 font-semibold">${item.precio_unitario.toFixed(2)}</span>
+                        <span className="text-zinc-400 font-bold">${item.precio_unitario.toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-[#1E1E1E]">
+                <div className="pt-4 border-t border-[#242428]">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Total</span>
-                    <span className="text-2xl font-black text-white">${pedido.total.toFixed(2)}</span>
+                    <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider">Total a cobrar</span>
+                    <span className="text-2xl font-heading font-black text-white">${pedido.total.toFixed(2)}</span>
                   </div>
 
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleUpdateStatus(pedido.id, 'pagado')}
                       disabled={processingId === pedido.id}
-                      className="flex-1 bg-success hover:bg-green-600 text-white text-xs font-black py-3 rounded-xl transition-colors uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 bg-[#7A8450] hover:bg-[#687242] text-white text-xs font-heading font-bold py-3 rounded-full transition-all duration-200 uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm active:scale-95"
                     >
                       {processingId === pedido.id ? '...' : (
                         <>
-                          <Icon path={ICONS.check} size={16} /> Cobrar
+                          <Icon path={ICONS.check} size={16} /> Registrar Pago
                         </>
                       )}
                     </button>
@@ -187,7 +188,7 @@ export default function CajaApp() {
                       <button
                         onClick={() => handleUpdateStatus(pedido.id, 'cancelado')}
                         disabled={processingId === pedido.id}
-                        className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/30 hover:border-destructive text-xs font-black p-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-[#C1272D]/20 text-[#C1272D] hover:bg-[#C1272D] hover:text-white border border-[#C1272D]/30 text-xs font-bold p-3 rounded-full transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                         title="Cancelar Pedido"
                       >
                         <Icon path={ICONS.trash} size={16} />

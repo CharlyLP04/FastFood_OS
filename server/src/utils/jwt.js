@@ -2,12 +2,13 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Criterio de Aceptación: exp a 8 horas desde iat
+// Criterio de Aceptación: exp a 30 minutos desde iat
+// ⚠️ Mantener sincronizado con maxAge de la cookie en authController.js (30 * 60 * 1000)
 function generarAccessToken(usuario) {
   return jwt.sign(
     { sub: usuario.id, rol: usuario.rol },
     JWT_SECRET,
-    { expiresIn: '8h' }
+    { expiresIn: '30m' }
   );
 }
 

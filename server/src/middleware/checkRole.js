@@ -7,7 +7,6 @@
  */
 const verificarRol = (...rolesPermitidos) => {
   return (req, res, next) => {
-    // Verificar que exista el usuario y su rol en la petición (adjunto por verificarToken)
     if (!req.usuario || !req.usuario.rol) {
       return res.status(403).json({
         error: 'Acceso denegado',
@@ -17,6 +16,11 @@ const verificarRol = (...rolesPermitidos) => {
 
     const usuarioRol = req.usuario.rol.trim().toLowerCase();
     const permitidosNormalizados = rolesPermitidos.map(r => r.trim().toLowerCase());
+
+    // Si busca 'administrador', también permitir 'admin'
+    if (permitidosNormalizados.includes('administrador')) {
+      permitidosNormalizados.push('admin');
+    }
 
     if (!permitidosNormalizados.includes(usuarioRol)) {
       return res.status(403).json({

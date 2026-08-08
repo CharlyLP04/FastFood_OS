@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon, ICONS } from '../components/ui/Icon';
-import { getUsuario, clearAuth } from '../utils/auth';
+import { useAuth } from '../hooks/useAuth';
 import { getPedidos, updatePedidoStatus } from '../services/api';
 import { Toast } from '../components/ui/Toast';
+import { CardSkeleton } from '../components/ui/Skeleton';
 
 export default function KDS() {
   const navigate = useNavigate();
-  const usuario = getUsuario();
+  const { usuario, logout } = useAuth();
   
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,9 +20,7 @@ export default function KDS() {
   const fetchPedidos = async () => {
     try {
       const data = await getPedidos();
-      // Filtrar solo pedidos que le importan a la cocina
       const cocinaPedidos = data.filter(p => p.estado === 'pendiente' || p.estado === 'en_preparacion');
-      // Ordenar por fecha de creación ascendente (los más viejos primero)
       cocinaPedidos.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       setPedidos(cocinaPedidos);
       setError('');
@@ -34,8 +33,8 @@ export default function KDS() {
 
   useEffect(() => {
     fetchPedidos();
-    const fetchInterval = setInterval(fetchPedidos, 10000); // Polling cada 10s
-    const timeInterval = setInterval(() => setNow(new Date()), 10000); // Update timer cada 10s
+    const fetchInterval = setInterval(fetchPedidos, 10000);
+    const timeInterval = setInterval(() => setNow(new Date()), 10000);
     return () => {
       clearInterval(fetchInterval);
       clearInterval(timeInterval);
@@ -62,33 +61,27 @@ export default function KDS() {
     return diffMins > 0 ? `${diffMins}m` : '<1m';
   };
 
-  // Helper para parsear el texto de las notas en "modificaciones"
   const parseNotesToMods = (notasText) => {
     if (!notasText) return [];
-    
-    // Separamos por comas o saltos de línea (asumiendo que los meseros escriben así)
     const rawMods = notasText.split(/,|\n/).map(s => s.trim()).filter(s => s.length > 0);
-    
     return rawMods.map(text => {
       const upper = text.toUpperCase();
-      let type = 'add'; // por defecto
+      let type = 'add';
       if (upper.includes('SIN ') || upper.includes('NO ')) type = 'remove';
       else if (upper.includes('EXTRA ')) type = 'extra';
-      
       return { type, text: upper };
     });
   };
 
   const getModColor = (type) => {
-    if (type === 'remove') return 'border-destructive text-destructive bg-destructive/10';
-    if (type === 'add') return 'border-secondary text-secondary bg-secondary/10';
-    return 'border-success text-success bg-success/10'; // extra
+    if (type === 'remove') return 'border-[#C1272D] text-[#C1272D] bg-[#C1272D]/15';
+    if (type === 'add') return 'border-[#D9A441] text-[#D9A441] bg-[#D9A441]/15';
+    return 'border-[#7A8450] text-[#7A8450] bg-[#7A8450]/15';
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6">
+    <div className="min-h-screen bg-[#0A0A0B] text-white p-6 font-body animate-fade-in">
       
-      {/* Toast Notification */}
       {toast && (
         <Toast 
           message={toast.message} 
@@ -98,109 +91,120 @@ export default function KDS() {
       )}
 
       {/* Header Cocina */}
-      <header className="flex justify-between items-center mb-8 border-b border-[#1E1E1E] pb-4">
+      <header className="flex flex-wrap justify-between items-center mb-8 border-b border-[#242428] pb-4 bg-[#141416] text-white p-4 rounded-xl shadow-md">
         <div className="flex items-center gap-4">
           <Link to={usuario?.rol === 'administrador' ? '/' : '/cocina'} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="bg-primary text-white font-bold w-6 h-6 rounded flex items-center justify-center text-xs">A</div>
-            <h1 className="font-bold tracking-widest text-sm uppercase text-white">Burger OS <span className="text-muted-foreground ml-2">/ KDS Cocina</span></h1>
+            <div className="bg-[#E85D2F]/15 border border-[#E85D2F]/30 p-2 rounded-xl text-[#E85D2F] flex items-center justify-center">
+              <Icon path={ICONS.burger} size={20} />
+            </div>
+            <h1 className="font-heading font-black tracking-wider text-sm uppercase text-white">A LA BURGER OS <span className="text-zinc-500 font-normal ml-2">/ KDS Cocina</span></h1>
           </Link>
           {usuario?.rol === 'administrador' && (
-            <Link to="/" className="text-xs bg-[#1E1E1E] hover:bg-neutral-800 border border-[#2A2A2F] text-neutral-300 font-bold px-3 py-1.5 rounded-lg transition-colors ml-2">
+            <Link to="/" className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-full transition-colors ml-2 active:scale-95">
               Volver al Panel
             </Link>
           )}
         </div>
         <div className="flex gap-4 text-xs font-bold tracking-wider items-center">
-          <span className="text-muted-foreground hidden md:inline">MODIFICACIONES:</span>
-          <span className="text-destructive items-center gap-1 hidden sm:flex"><div className="w-2 h-2 border border-destructive"></div> ELIMINAR</span>
-          <span className="text-secondary items-center gap-1 hidden sm:flex"><div className="w-2 h-2 border border-secondary"></div> AGREGAR</span>
-          <span className="text-success items-center gap-1 hidden sm:flex"><div className="w-2 h-2 border border-success"></div> EXTRA</span>
+          <span className="text-zinc-500 hidden md:inline">LEYENDA:</span>
+          <span className="text-[#C1272D] items-center gap-1 hidden sm:flex"><div className="w-2 h-2 rounded-full bg-[#C1272D]"></div> QUITAR</span>
+          <span className="text-[#D9A441] items-center gap-1 hidden sm:flex"><div className="w-2 h-2 rounded-full bg-[#D9A441]"></div> AGREGAR</span>
+          <span className="text-[#7A8450] items-center gap-1 hidden sm:flex"><div className="w-2 h-2 rounded-full bg-[#7A8450]"></div> EXTRA</span>
           
           <button 
-            onClick={() => { clearAuth(); navigate('/login'); }}
-            className="text-xs text-destructive hover:text-white bg-destructive/10 hover:bg-destructive font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer uppercase tracking-wider ml-4"
+            onClick={async () => { await logout(); navigate('/login'); }}
+            className="text-xs text-[#C1272D] hover:text-white bg-[#C1272D]/20 hover:bg-[#C1272D] font-bold px-4 py-1.5 rounded-full transition-colors cursor-pointer uppercase tracking-wider ml-4 active:scale-95"
           >
             Salir
           </button>
         </div>
       </header>
 
-      {/* Loading / Error States */}
+      {/* Loading / Error / Empty States */}
       {loading ? (
-        <div className="text-center py-20 text-muted-foreground font-bold tracking-widest">
-          CARGANDO PEDIDOS...
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
         </div>
       ) : error ? (
-        <div className="bg-destructive/20 border border-destructive text-destructive p-4 rounded-lg text-center font-bold">
+        <div className="bg-[#C1272D]/15 border border-[#C1272D] text-[#C1272D] p-6 rounded-xl text-center font-bold animate-fade-in">
           {error}
         </div>
       ) : pedidos.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground font-bold tracking-widest border border-dashed border-[#2A2A2F] rounded-xl">
-          NO HAY PEDIDOS ACTIVOS EN LA COCINA
+        <div className="text-center py-20 bg-[#141416] rounded-xl border border-dashed border-[#242428] shadow-sm p-8 max-w-lg mx-auto animate-fade-in flex flex-col items-center">
+          <div className="w-14 h-14 rounded-full bg-[#E85D2F]/15 text-[#E85D2F] flex items-center justify-center mb-4">
+            <Icon path={ICONS.chef} size={28} />
+          </div>
+          <h3 className="font-heading font-black text-white text-xl mb-1">Cocina limpia y al día</h3>
+          <p className="text-xs text-zinc-400 max-w-xs mx-auto">No hay comandas pendientes. Los pedidos nuevos aparecerán aquí automáticamente en tiempo real.</p>
         </div>
       ) : (
-        /* Grid de Comandas */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        /* Grid de Comandas con animación de llegada */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {pedidos.map((order) => {
-            const timeClass = order.estado === 'en_preparacion' ? 'text-primary' : 'text-success';
+            const isPreparing = order.estado === 'en_preparacion';
             return (
-              <div key={order.id} className="bg-card border border-[#1E1E1E] rounded-xl p-5 flex flex-col h-full shadow-lg">
-                {/* Cabecera de la comanda */}
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-2xl font-black">#{order.id}</h2>
-                  <span className="bg-[#1E1E1E] text-muted-foreground text-xs font-bold px-2 py-1 rounded tracking-widest uppercase">
+              <div key={order.id} className="bg-[#141416] border border-[#242428] rounded-xl p-5 flex flex-col h-full shadow-md hover:shadow-lg transition-all duration-200 animate-order-arrive">
+                {/* Order Header */}
+                <div className="flex justify-between items-start mb-3">
+                  <h2 className="text-2xl font-heading font-black text-white">#{order.id}</h2>
+                  <span className="bg-[#1C1C20] border border-[#2D2D35] text-zinc-300 text-[10px] font-bold px-3 py-1 rounded-full tracking-wider uppercase">
                     {order.mesa_numero ? `MESA ${order.mesa_numero}` : 'LLEVAR'}
                   </span>
                 </div>
                 
-                <div className={`flex items-center gap-1 mb-6 font-bold ${timeClass}`}>
+                <div className={`flex items-center gap-1 mb-5 font-bold text-xs ${isPreparing ? 'text-[#E85D2F]' : 'text-[#7A8450]'}`}>
                    <Icon path={ICONS.clock} size={14} />
-                   {getElapsedMinutes(order.created_at)} <span className="text-muted-foreground text-xs ml-1 font-normal">transcurrido</span>
+                   {getElapsedMinutes(order.created_at)} <span className="text-zinc-500 text-xs font-normal">transcurrido</span>
                 </div>
 
                 {/* Items */}
-                <div className="flex-1 space-y-5">
+                <div className="flex-1 space-y-3 border-t border-[#242428] pt-4">
                   {order.items.map((item, idx) => {
                     const mods = parseNotesToMods(item.notas);
                     return (
-                      <div key={idx}>
-                        <p className="font-bold uppercase tracking-wide text-sm mb-2">
-                          {item.producto_nombre} ×{item.cantidad}
+                      <div key={idx} className="bg-[#1C1C20] p-3 rounded-xl border border-[#2D2D35]">
+                        <p className="font-bold text-sm text-white">
+                          {item.producto_nombre} <span className="text-[#E85D2F]">×{item.cantidad}</span>
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          {mods.map((mod, midx) => (
-                            <span key={midx} className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border ${getModColor(mod.type)}`}>
-                              {mod.text}
-                            </span>
-                          ))}
-                        </div>
+                        {mods.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {mods.map((mod, midx) => (
+                              <span key={midx} className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${getModColor(mod.type)}`}>
+                                {mod.text}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Botones de acción */}
-                <div className="mt-6 pt-4 border-t border-[#1E1E1E]">
-                  {order.estado === 'en_preparacion' ? (
+                {/* Actions */}
+                <div className="mt-6 pt-4 border-t border-[#242428]">
+                  {isPreparing ? (
                     <button 
                       onClick={() => handleUpdateStatus(order.id, 'listo')}
                       disabled={processingId === order.id}
-                      className="w-full bg-success/20 hover:bg-success/30 text-success border border-success font-bold py-3 rounded-lg flex items-center justify-center gap-2 tracking-widest text-sm transition-colors disabled:opacity-50"
+                      className="w-full bg-[#7A8450] hover:bg-[#687242] text-white font-heading font-bold py-3 rounded-full flex items-center justify-center gap-2 tracking-wider text-xs transition-all duration-200 cursor-pointer disabled:opacity-50 uppercase shadow-sm active:scale-95"
                     >
                       {processingId === order.id ? 'PROCESANDO...' : (
-                        <>LISTO <Icon path={ICONS.check} size={16} /></>
+                        <>MARCAR LISTO <Icon path={ICONS.check} size={16} /></>
                       )}
                     </button>
                   ) : (
                     <div className="space-y-2">
-                      <div className="text-center text-primary text-xs font-bold tracking-widest mb-2">NUEVO</div>
+                      <div className="text-center text-[#E85D2F] text-[10px] font-bold tracking-widest uppercase">NUEVA ORDEN</div>
                       <button 
                         onClick={() => handleUpdateStatus(order.id, 'en_preparacion')}
                         disabled={processingId === order.id}
-                        className="w-full bg-primary hover:bg-[#c94508] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 tracking-widest text-sm transition-colors disabled:opacity-50"
+                        className="w-full bg-[#E85D2F] hover:bg-[#d64e21] text-white font-heading font-bold py-3 rounded-full flex items-center justify-center gap-2 tracking-wider text-xs transition-all duration-200 cursor-pointer disabled:opacity-50 uppercase shadow-sm active:scale-95"
                       >
                         {processingId === order.id ? 'PROCESANDO...' : (
-                          <><Icon path={ICONS.chef} size={16} /> PREPARAR</>
+                          <><Icon path={ICONS.chef} size={16} /> EMPEZAR A PREPARAR</>
                         )}
                       </button>
                     </div>
