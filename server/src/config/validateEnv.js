@@ -52,13 +52,10 @@ const REQUIRED_VARS = [
   {
     name: 'ALLOWED_ORIGINS',
     description: 'Lista de orígenes permitidos por CORS (separados por coma)',
-    // Solo requerida en producción — en desarrollo se usan los localhost por defecto
-    onlyIn: ['production'],
+    optional: true,
     validate: (val) => {
-      const origins = (val || '').split(',').map((o) => o.trim()).filter(Boolean);
-      if (origins.length === 0 && !process.env.VERCEL) {
-        return 'ALLOWED_ORIGINS está vacío. Agrega al menos un dominio de Vercel.';
-      }
+      if (!val) return null;
+      const origins = val.split(',').map((o) => o.trim()).filter(Boolean);
       const invalid = origins.filter((o) => !o.startsWith('http://') && !o.startsWith('https://'));
       if (invalid.length > 0) {
         return `Los siguientes orígenes no tienen protocolo (http/https): ${invalid.join(', ')}`;
@@ -69,7 +66,9 @@ const REQUIRED_VARS = [
   {
     name: 'STRIPE_SECRET_KEY',
     description: 'Clave secreta de Stripe para pagos',
+    optional: true,
     validate: (val) => {
+      if (!val) return null;
       if (!val.startsWith('sk_')) {
         return 'STRIPE_SECRET_KEY debe comenzar con "sk_test_" (pruebas) o "sk_live_" (producción)';
       }
@@ -98,6 +97,10 @@ function validateEnv() {
     const value = process.env[varDef.name];
 
     if (!value || value.trim() === '') {
+      if (varDef.optional) {
+        console.warn(`  ⚠️ [validateEnv] Variable opcional ${varDef.name} no está configurada (${varDef.description})`);
+        continue;
+      }
       errors.push(`  ✗ ${varDef.name} — falta o está vacía (${varDef.description})`);
       continue;
     }
@@ -106,7 +109,11 @@ function validateEnv() {
     if (varDef.validate) {
       const validationError = varDef.validate(value.trim());
       if (validationError) {
-        errors.push(`  ✗ ${varDef.name} — ${validationError}`);
+        if (varDef.optional) {
+          console.warn(`  ⚠️ [validateEnv] ${varDef.name} — ${validationError}`);
+        } else {
+          errors.push(`  ✗ ${varDef.name} — ${validationError}`);
+        }
       }
     }
   }
