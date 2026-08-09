@@ -16,7 +16,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/index.js"
+      "dest": "https://alaburger-os-2fyu.onrender.com/api/$1"
     },
     {
       "src": "/(assets/.*)",
