@@ -57,7 +57,9 @@ app.use(verifyOrigin);
 // ─────────────────────────────────────────────────────────────
 
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/api', rutas);
+app.use('/', rutas);
 
 // ─────────────────────────────────────────────────────────────
 // 404
