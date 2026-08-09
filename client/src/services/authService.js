@@ -28,10 +28,10 @@ export async function loginApi(username, password) {
     body: JSON.stringify({ username, password }),
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || data.mensaje || 'Error al iniciar sesión');
+    throw new Error(data.error || data.mensaje || 'Error al conectar con el servidor.');
   }
 
   return data; // { usuario: { id, nombre, username, rol } }
