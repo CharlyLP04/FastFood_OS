@@ -36,12 +36,17 @@ const verifyOrigin = (req, res, next) => {
   }
 
   const origin = req.headers.origin || req.get('origin');
+  const host = req.headers.host || req.get('host');
 
-  if (!origin || !allowedOrigins.includes(origin)) {
-    return res.status(403).json({
-      error: 'Origen no autorizado',
-      mensaje: 'Petición rechazada: el origen de la solicitud no está en la lista de dominios autorizados.',
-    });
+  if (!origin) return next();
+
+  // Permitir peticiones same-origin donde Origin coincide con Host
+  if (host && (origin === `https://${host}` || origin === `http://${host}`)) {
+    return next();
+  }
+
+  if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    return next();
   }
 
   next();
