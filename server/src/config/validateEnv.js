@@ -55,8 +55,8 @@ const REQUIRED_VARS = [
     // Solo requerida en producción — en desarrollo se usan los localhost por defecto
     onlyIn: ['production'],
     validate: (val) => {
-      const origins = val.split(',').map((o) => o.trim()).filter(Boolean);
-      if (origins.length === 0) {
+      const origins = (val || '').split(',').map((o) => o.trim()).filter(Boolean);
+      if (origins.length === 0 && !process.env.VERCEL) {
         return 'ALLOWED_ORIGINS está vacío. Agrega al menos un dominio de Vercel.';
       }
       const invalid = origins.filter((o) => !o.startsWith('http://') && !o.startsWith('https://'));

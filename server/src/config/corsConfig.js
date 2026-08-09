@@ -19,6 +19,13 @@ const ALLOWED_ORIGINS_PROD = (process.env.ALLOWED_ORIGINS || '')
   .map((o) => o.trim())
   .filter(Boolean);
 
+if (process.env.VERCEL_URL) {
+  ALLOWED_ORIGINS_PROD.push(`https://${process.env.VERCEL_URL}`);
+}
+if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+  ALLOWED_ORIGINS_PROD.push(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+}
+
 const ALLOWED_ORIGINS_DEV = [
   'http://localhost:5173', // Vite dev server
   'http://localhost:3000', // Express (self-requests / Postman con origin)
@@ -33,7 +40,7 @@ const ALLOWED_ORIGINS_DEV = [
  */
 const buildAllowedOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
-    if (ALLOWED_ORIGINS_PROD.length === 0) {
+    if (ALLOWED_ORIGINS_PROD.length === 0 && !process.env.VERCEL) {
       console.warn(
         '[CORS] ⚠️  NODE_ENV=production pero ALLOWED_ORIGINS está vacío. ' +
           'Ningún origen externo podrá hacer peticiones.'
@@ -57,7 +64,7 @@ const originValidator = (origin, callback) => {
   // Peticiones sin header Origin (e.g. curl, Postman sin origen, server-to-server)
   if (!origin) return callback(null, true);
 
-  if (allowedOrigins.includes(origin)) {
+  if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
     return callback(null, true);
   }
 
