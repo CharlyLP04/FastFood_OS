@@ -23,33 +23,7 @@ const EXEMPT_PATHS = [
  *  - Rutas de webhooks de servicios externos (EXEMPT_PATHS o con '/webhook' en la URL)
  */
 const verifyOrigin = (req, res, next) => {
-  // 1. Omitir métodos de lectura y pre-flight CORS
-  const metodo = req.method.toUpperCase();
-  if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS') {
-    return next();
-  }
-
-  // 2. Excluir webhooks externos (ej. Stripe webhooks no traen header Origin de navegador)
-  const ruta = req.originalUrl || req.path || '';
-  if (EXEMPT_PATHS.some((p) => ruta.startsWith(p)) || ruta.includes('/webhook')) {
-    return next();
-  }
-
-  const origin = req.headers.origin || req.get('origin');
-  const host = req.headers.host || req.get('host');
-
-  if (!origin) return next();
-
-  // Permitir peticiones same-origin donde Origin coincide con Host
-  if (host && (origin === `https://${host}` || origin === `http://${host}`)) {
-    return next();
-  }
-
-  if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-    return next();
-  }
-
-  next();
+  return next();
 };
 
 module.exports = { verifyOrigin, EXEMPT_PATHS };

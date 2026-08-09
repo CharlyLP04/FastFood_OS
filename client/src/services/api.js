@@ -12,7 +12,7 @@
 import { handleSessionExpired } from '../utils/auth';
 import { refreshToken } from './authService';
 
-const rawApiUrl = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
+const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
 const API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 // ─────────────────────────────────────────────────────────────────────────────

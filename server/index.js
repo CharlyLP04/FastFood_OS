@@ -1,5 +1,5 @@
-// Punto de entrada principal del servidor A La Burger OS
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // HU-4: Validar variables de entorno críticas ANTES de cargar cualquier módulo.
 const validateEnv = require('./src/config/validateEnv');
