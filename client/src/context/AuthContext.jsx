@@ -7,13 +7,13 @@
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { logoutApi, me as meApi } from '../services/authService';
-import { BACKEND_URL } from '../config/apiConfig';
+import { API_URL } from '../config/apiConfig';
 
 export const AuthContext = createContext(null);
 
 // Despierta el servidor de Render en background para evitar cold start
 function wakeUpServer() {
-  fetch(`${BACKEND_URL}/health`, { credentials: 'include' }).catch(() => {});
+  fetch(`${API_URL}/health`, { credentials: 'include' }).catch(() => {});
 }
 
 export function AuthProvider({ children }) {

@@ -1,5 +1,7 @@
-// api.js — usa VITE_API_URL si está definida (producción Render), sino /api (local con proxy Vite)
-const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
-const API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+// URL del backend. En producción apunta al servidor de Render.
+// En local, Vite proxea /api → http://localhost:3000 (ver vite.config.js)
+const API_URL = import.meta.env.DEV
+  ? '/api'
+  : 'https://alaburger-os-2fyu.onrender.com/api';
 
-export const BACKEND_URL = API_URL;
+export { API_URL };
