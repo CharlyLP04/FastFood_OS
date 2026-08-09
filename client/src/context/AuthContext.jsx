@@ -1,41 +1,38 @@
 /**
  * AuthContext.jsx — Estado global de autenticación (HU-5)
  *
- * Reemplaza el uso de localStorage para detectar si el usuario está logueado.
- * Al montar la app, llama GET /api/auth/me para verificar si existe una cookie
- * de acceso válida en el navegador. Si la hay, el servidor devuelve { usuario };
- * si no, devuelve 401 y el estado queda como no autenticado.
- *
- * API del contexto:
- *   usuario  — objeto { id, nombre, username, rol } o null
- *   loading  — true mientras se verifica la sesión inicial (evita flash de /login)
- *   login(usuario)  — guarda el usuario tras login exitoso
- *   logout()        — llama POST /api/auth/logout y limpia el estado
+ * Al montar la app hace un "wake-up ping" al backend para despertar
+ * el servidor de Render antes de que el usuario intente iniciar sesión.
  */
 
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { logoutApi, me as meApi } from '../services/authService';
+import { BACKEND_URL } from '../config/apiConfig';
 
 export const AuthContext = createContext(null);
 
+// Despierta el servidor de Render en background para evitar cold start
+function wakeUpServer() {
+  fetch(`${BACKEND_URL}/health`, { credentials: 'include' }).catch(() => {});
+}
+
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
-  const [loading, setLoading] = useState(true); // true hasta que /me responda
+  const [loading, setLoading] = useState(true);
 
-  // ── Verificar sesión al montar la app ──────────────────────────────────────
-  // Se llama SIEMPRE al montar, incluyendo al recargar la página.
-  // Si la cookie access_token sigue vigente, /me la valida y devuelve el usuario.
   useEffect(() => {
     let cancelled = false;
 
+    // Ping al servidor para despertarlo (Render free tier duerme tras 15 min)
+    wakeUpServer();
+
     async function verificarSesion() {
       try {
-        const data = await meApi(); // GET /api/auth/me con credentials: 'include'
+        const data = await meApi();
         if (!cancelled) {
           setUsuario(data.usuario);
         }
       } catch {
-        // 401 = no hay sesión activa — estado correcto, no es un error
         if (!cancelled) {
           setUsuario(null);
         }
@@ -50,15 +47,13 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
-  // ── login: llamado por Login.jsx tras login exitoso ───────────────────────
   const login = useCallback((usuarioData) => {
     setUsuario(usuarioData);
   }, []);
 
-  // ── logout: llama al servidor para limpiar cookies y limpia estado ─────────
   const logout = useCallback(async () => {
     try {
-      await logoutApi(); // POST /api/auth/logout — limpia cookies httpOnly en servidor
+      await logoutApi();
     } catch {
       // Si el servidor falla, de todas formas limpiamos el estado local
     } finally {
