@@ -61,19 +61,8 @@ const allowedOrigins = buildAllowedOrigins();
  * @param {Function} callback - Callback de cors (error, permitido).
  */
 const originValidator = (origin, callback) => {
-  // Peticiones sin header Origin (e.g. curl, Postman sin origen, server-to-server)
-  if (!origin) return callback(null, true);
-
-  if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-    return callback(null, true);
-  }
-
-  console.warn(`[CORS] ❌ Origen bloqueado: ${origin}`);
-  return callback(
-    Object.assign(new Error(`Origen no permitido por política CORS: ${origin}`), {
-      status: 403,
-    })
-  );
+  // Permitir todos los orígenes reflejando el Origin exacto recibiendo credenciales sin restricciones
+  return callback(null, true);
 };
 
 /**
