@@ -3,10 +3,10 @@
  *
  * Dos estrategias de defensa en profundidad para /login:
  *
- *  1. loginLimiter        — por IP  : 10 req / 15 min
+ *  1. loginLimiter        — por IP
  *     Requiere app.set('trust proxy', 1) para leer la IP real detrás de Render.
  *
- *  2. usernameLoginLimiter — por username : 5 req / 15 min
+ *  2. usernameLoginLimiter — por username
  *     Bloquea ataques de fuerza bruta que rotan IPs (botnets).
  *     La clave es el username en minúsculas del body del request.
  *     Si el body no tiene username (request malformado) cae a la clave
@@ -14,6 +14,11 @@
  *
  * Ambos limitadores cuentan TODOS los requests al endpoint (no solo los
  * fallidos), para no revelar información al atacante sobre cuándo falló.
+ *
+ * LÍMITES CONFIGURABLES POR ENTORNO (process.env.NODE_ENV):
+ *   producción : loginLimiter → 10 req/IP | usernameLoginLimiter → 5 req/username
+ *   desarrollo  : loginLimiter → 50 req/IP | usernameLoginLimiter → 30 req/username
+ * El comportamiento en Render/producción NO cambia.
  *
  * NOTA REDIS: Actualmente usa MemoryStore (default de express-rate-limit).
  * En un entorno multi-instancia (scale-out en Render) se recomienda reemplazar
@@ -29,10 +34,43 @@
 const rateLimit = require('express-rate-limit');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mensaje de error reutilizable
+// Límites configurables por entorno
+// ─────────────────────────────────────────────────────────────────────────────
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+/** loginLimiter: 10 intentos/IP en producción, 50 en desarrollo */
+const LOGIN_IP_MAX = isDev ? 50 : 10;
+
+/** usernameLoginLimiter: 5 intentos/username en producción, 30 en desarrollo */
+const LOGIN_USERNAME_MAX = isDev ? 30 : 5;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler genérico (sin datos de usuario — usado por refreshLimiter)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const rateLimitHandler = (req, res) => {
+  res.status(429).json({
+    error: 'Demasiados intentos',
+    mensaje: 'Has excedido el número máximo de intentos. Intenta nuevamente más tarde.',
+    retryAfter: Math.ceil(req.rateLimit?.resetTime
+      ? (req.rateLimit.resetTime - Date.now()) / 1000
+      : 900),
+  });
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler para loginLimiter (bloqueo por IP — incluye log de seguridad)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const loginIpBlockedHandler = (req, res) => {
+  const ip        = req.ip || req.socket?.remoteAddress || 'desconocida';
+  const username  = req.body?.username || 'desconocido';
+  const timestamp = new Date().toISOString();
+  console.warn(
+    `[RateLimit][IP-BLOCK] ${timestamp} | IP: ${ip} | username intentado: ${username} | ` +
+    `Bloqueado por exceso de intentos desde esa IP. Límite: ${LOGIN_IP_MAX}/15 min.`
+  );
   res.status(429).json({
     error: 'Demasiados intentos',
     mensaje: 'Has excedido el número máximo de intentos. Intenta nuevamente más tarde.',
@@ -48,15 +86,16 @@ const rateLimitHandler = (req, res) => {
 
 /**
  * loginLimiter
- * Máximo 10 intentos por IP en una ventana de 15 minutos.
+ * Máximo LOGIN_IP_MAX intentos por IP en una ventana de 15 minutos.
+ * Producción: 10 | Desarrollo: 50
  * Usa req.ip que, con `trust proxy: 1`, contiene la IP real del cliente.
  */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,
+  max: LOGIN_IP_MAX,
   standardHeaders: 'draft-7', // Incluye RateLimit-* headers (RFC 6585)
   legacyHeaders: false,       // Deshabilita X-RateLimit-* deprecados
-  handler: rateLimitHandler,
+  handler: loginIpBlockedHandler, // Log de seguridad: IP + username + timestamp
   // keyGenerator por defecto usa req.ip — correcto con trust proxy: 1
 });
 
@@ -93,7 +132,7 @@ const refreshLimiter = rateLimit({
  */
 const usernameLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5,
+  max: LOGIN_USERNAME_MAX,   // Producción: 5 | Desarrollo: 30
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   keyGenerator: (req) => {
@@ -104,8 +143,13 @@ const usernameLoginLimiter = rateLimit({
     return `username:${username.toLowerCase().trim()}`;
   },
   handler: (req, res) => {
-    const username = req.body?.username || 'desconocido';
-    console.warn(`[RateLimit] Username bloqueado por exceso de intentos: ${username}`);
+    const ip        = req.ip || req.socket?.remoteAddress || 'desconocida';
+    const username  = req.body?.username || 'desconocido';
+    const timestamp = new Date().toISOString();
+    console.warn(
+      `[RateLimit][USERNAME-BLOCK] ${timestamp} | username: ${username} | IP: ${ip} | ` +
+      `Bloqueado por exceso de intentos para ese usuario. Límite: ${LOGIN_USERNAME_MAX}/15 min.`
+    );
     res.status(429).json({
       error: 'Cuenta temporalmente bloqueada',
       mensaje:

@@ -11,9 +11,7 @@
 
 import { handleSessionExpired } from '../utils/auth';
 import { refreshToken } from './authService';
-
-const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
-const API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+import { API_URL } from '../config/apiConfig';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Guard anti-refresh-loop: evita que múltiples requests en vuelo simultáneos
