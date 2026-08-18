@@ -2,7 +2,7 @@
  * auth.js — Utilidades de autenticación del cliente (HU-5)
  */
 
-const AUTH_MESSAGE_KEY = 'alaburger_auth_message';
+const AUTH_MESSAGE_KEY = 'fastfood_auth_message';
 
 const DEFAULT_ROUTES_BY_ROLE = {
   administrador: '/',

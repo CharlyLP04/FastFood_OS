@@ -87,7 +87,7 @@
 psql $DB_URL -f server/db/schema.sql
 
 # O con parámetros explícitos
-psql -h localhost -U tu_usuario -d alaburger_os -f server/db/schema.sql
+psql -h localhost -U tu_usuario -d fastfood_db -f server/db/schema.sql
 ```
 
 > El script es **idempotente**: usa `CREATE TABLE IF NOT EXISTS` y `ON CONFLICT DO NOTHING`, por lo que puede ejecutarse múltiples veces sin errores.
@@ -111,9 +111,9 @@ El script incluye datos de prueba listos para desarrollo:
 
 | Usuario | Email | Contraseña |
 |---|---|---|
-| Administrador | `admin@alaburger.com` | `admin123` |
-| Mesero | `mesero@alaburger.com` | `mesero123` |
-| Cajero | `cajero@alaburger.com` | `cajero123` |
+| Administrador | `admin@fastfood.com` | `admin123` |
+| Mesero | `mesero@fastfood.com` | `mesero123` |
+| Cajero | `cajero@fastfood.com` | `cajero123` |
 
 > ⚠️ **Importante:** Cambia estos hashes antes de pasar a producción.
 

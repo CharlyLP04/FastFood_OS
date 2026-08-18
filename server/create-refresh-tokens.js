@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-const client = new Client({ connectionString: 'postgresql://alaburger_db_user:jYQJGGAif4XPEIyef1z7AbyDMwTIwrHw@dpg-d9e6nb3tqb8s739t3gtg-a.virginia-postgres.render.com/alaburger_db', ssl: { rejectUnauthorized: false } });
+const client = new Client({ connectionString: 'postgresql://usuario:contraseña@localhost:5432/fastfood_db' });
 client.connect().then(async () => {
   try {
     await client.query(`

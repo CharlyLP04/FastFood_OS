@@ -1,6 +1,6 @@
 # Guía Técnica de Entrevistas para Levantamiento de Requerimientos Multi-Sucursal
-**Proyecto:** alaburger-os
-**Caso de Estudio:** A la Burguer Tehuacán (Validación de Cliente Beta / Early Adopter)
+**Proyecto:** FastFood OS
+**Caso de Estudio:** [Nombre del Restaurante] (Validación de Cliente Beta / Early Adopter)
 **Objetivo:** Capturar la información operativa, estructura de sucursales y volumen de venta para alinear el Google Form y la Landing Page.
 
 ---

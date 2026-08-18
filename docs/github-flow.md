@@ -116,5 +116,5 @@ git checkout -b feature/mi-funcionalidad
 
 ---
 
-> 🔧 Dudas técnicas → Carlos (Tech Lead)
-> 📋 Dudas de producto → Dana (Product Owner)
+> 🔧 Dudas técnicas → Tech Lead
+> 📋 Dudas de producto → Product Owner
