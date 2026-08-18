@@ -12,13 +12,13 @@ arquitectura y flujos de trabajo necesarios para el equipo.
 
 ## 👥 Roles clave
 
-| Rol | Responsable |
-|-----|-------------|
-| Product Owner | Castañeda Sánchez Dana Lizbeth |
-| Tech Lead | Olaya Gutiérrez Carlos |
-| Product Engineer | Montalvo Osorio Alexis |
-| QA / Delivery | Flores Osorio Jarumi Guadalupe |
-| Growth Lead | Reyes Torres Manelic Alitzel |
+| Rol | Persona |
+| :--- | :--- |
+| Product Owner | [Nombre] |
+| Tech Lead | [Nombre] |
+| Product Engineer | [Nombre] |
+| QA / Delivery | [Nombre] |
+| Growth Lead | [Nombre] |
 
 ## 🔀 Flujo de trabajo
 

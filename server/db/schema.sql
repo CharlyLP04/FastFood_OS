@@ -306,22 +306,22 @@ ON CONFLICT (nombre) DO NOTHING;
 -- ------------------------------------------------------------
 INSERT INTO usuarios (nombre, apellido, username, password_hash, rol_id) VALUES
     (
-        'Carlos',
-        'Olaya',
+        'Admin',
+        'Sistema',
         'admin',
         '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',  -- admin123
         (SELECT id FROM roles WHERE nombre = 'administrador')
     ),
     (
-        'Jarumi',
-        'Flores',
+        'Mesero',
+        'Uno',
         'mesero',
         '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',  -- mesero123
         (SELECT id FROM roles WHERE nombre = 'mesero')
     ),
     (
-        'Manelic',
-        'Reyes',
+        'Cajero',
+        'Uno',
         'cajero',
         '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',  -- cajero123
         (SELECT id FROM roles WHERE nombre = 'cajero')

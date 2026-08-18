@@ -2,7 +2,7 @@
 
 ## Integrante
 
-**Flores Osorio Jarumi Guadalupe**  
+**Autor**  
 Rol: QA / Delivery
 
 ---

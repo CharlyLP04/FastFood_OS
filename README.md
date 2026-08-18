@@ -1,6 +1,6 @@
-# 🍔 A La Burger OS 
+# 🍔 FastFood OS 
 
-> Sistema operativo de gestión gastronómica, comandas, inventario y punto de venta en tiempo real para A La Burger.
+> Sistema operativo de gestión gastronómica, comandas, inventario y punto de venta en tiempo real para restaurantes de comida rápida.
 
 ---
 
@@ -25,7 +25,7 @@ Para explorar la plataforma según los distintos roles de trabajo del restaurant
 
 ## 🚀 ¿Qué problema resuelve?
 
-**A La Burger OS** digitaliza la operación completa de la hamburguesería: desde que el mesero toma el pedido en mesa hasta la cola de preparación en cocina, cobro en caja y descuento automático de insumos en inventario.
+**FastFood OS** digitaliza la operación completa del restaurante: desde que el mesero toma el pedido en mesa hasta la cola de preparación en cocina, cobro en caja y descuento automático de insumos en inventario.
 
 ---
 
@@ -55,7 +55,7 @@ Para explorar la plataforma según los distintos roles de trabajo del restaurant
 ## 📁 Estructura del Proyecto
 
 ```text
-alaburger-os/
+fastfood-os/
 ├── client/              # Frontend React + Vite
 │   ├── src/
 │   │   ├── components/  # Componentes UI (Toast, Skeleton, Layout, Icon)
@@ -78,8 +78,8 @@ alaburger-os/
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/CharlyLP04/alaburger-os.git
-cd alaburger-os
+git clone https://github.com/tu-usuario/fastfood-os.git
+cd fastfood-os
 ```
 
 ### 2. Instalar dependencias
@@ -100,18 +100,3 @@ npm run dev
 
 ---
 
-## 👥 Equipo de Desarrollo
-
-| Nombre | Rol |
-| :--- | :--- |
-| **Olaya Gutiérrez Carlos** | Tech Lead / Full Stack Engineer |
-| **Castañeda Sánchez Dana Lizbeth** | Product Owner |
-| **Montalvo Osorio Alexis** | Product Engineer |
-| **Flores Osorio Jarumi Guadalupe** | QA / Delivery |
-| **Reyes Torres Manelic Alitzel** | Growth Lead |
-
----
-
-## 📌 Tablero de Avances
-
-[Ver tablero de GitHub Issues →](https://github.com/CharlyLP04/alaburger-os/issues)

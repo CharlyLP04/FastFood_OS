@@ -15,7 +15,7 @@ const { generarAccessToken, generarRefreshToken } = require('../utils/jwt');
  * ⚠️ COST FACTOR: sync con userController.js genSalt(10). Actualizar si cambia.
  */
 const BCRYPT_COST = 10;
-const DUMMY_HASH = bcrypt.hashSync('__dummy_alaburger_guard__', BCRYPT_COST);
+const DUMMY_HASH = bcrypt.hashSync('__dummy_fastfood_guard__', BCRYPT_COST);
 
 /** Respuesta unificada — mismo body para cualquier fallo de autenticación. */
 const CREDENCIALES_INVALIDAS = {

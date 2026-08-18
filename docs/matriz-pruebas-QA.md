@@ -1,8 +1,8 @@
-# Matriz de Pruebas QA — A La Burger OS
-**Responsable:** Jarumi  
-**Rol:** QA  
-**Fecha:** 12/07/2026  
-**Rama:** feat/backend-auth-orders  
+# Matriz de Pruebas QA — FastFood OS
+**Responsable:** QA
+**Rol:** QA
+**Fecha:** 12/07/2026
+**Rama:** feat/backend-auth-orders
 
 ---
 
@@ -12,9 +12,9 @@
 |----|---------------|--------------|-------|-------------------|-------------------|--------|
 | TC-01 | Campos vacíos | App corriendo en localhost:5173 | 1. Ir a /login 2. Dejar campos vacíos 3. Clic en "Iniciar Sesión" | Muestra "Completa este campo" y bloquea el submit | Muestra "Completa este campo" en campo correo | ✅ PASÓ |
 | TC-02 | Email sin formato válido | App corriendo en localhost:5173 | 1. Ir a /login 2. Escribir "adminsinArroba" en correo 3. Clic en "Iniciar Sesión" | Muestra error de formato de email y bloquea el submit | Muestra 'Incluye un signo "@"' y bloquea el submit |  PASÓ |
-| TC-03 | Contraseña vacía con email válido | App corriendo en localhost:5173 | 1. Ir a /login 2. Escribir "admin@alaburger.com" 3. Dejar contraseña vacía 4. Clic en "Iniciar Sesión" | Muestra "Completa este campo" en contraseña | Muestra "Completa este campo" en contraseña |  PASÓ |
+| TC-03 | Contraseña vacía con email válido | App corriendo en localhost:5173 | 1. Ir a /login 2. Escribir "admin@fastfood.com" 3. Dejar contraseña vacía 4. Clic en "Iniciar Sesión" | Muestra "Completa este campo" en contraseña | Muestra "Completa este campo" en contraseña |  PASÓ |
 | TC-04 | Credenciales inválidas | Backend + BD corriendo | 1. Ir a /login 2. Escribir email y contraseña incorrectos 3. Clic en "Iniciar Sesión" | Responde 401 con mensaje de error sin especificar qué campo falló | Pendiente — BD no disponible al momento de la prueba |  PENDIENTE |
-| TC-05 | Credenciales válidas | Backend + BD corriendo | 1. Ir a /login 2. Escribir "admin@alaburger.com" y "password" 3. Clic en "Iniciar Sesión" | Responde 200 con JWT y objeto usuario sin password_hash | Pendiente — BD no disponible al momento de la prueba |  PENDIENTE |
+| TC-05 | Credenciales válidas | Backend + BD corriendo | 1. Ir a /login 2. Escribir "admin@fastfood.com" y "password" 3. Clic en "Iniciar Sesión" | Responde 200 con JWT y objeto usuario sin password_hash | Pendiente — BD no disponible al momento de la prueba |  PENDIENTE |
 
 ---
 
@@ -55,7 +55,7 @@
 | ID | Descripción | Severidad | HU relacionada | Estado |
 |----|-------------|-----------|---------------|--------|
 | BUG-01 | Endpoint POST /api/auth/logout no implementado en authController.js — solo existe función login |  Alta | HU-02 | Reportado al equipo |
-| BUG-02 | BD Supabase no accesible desde servidor local — error ENOTFOUND al intentar login |  Media | HU-05, HU-QA-01 | Reportado a Alexis — pendiente resolución |
+| BUG-02 | BD Supabase no accesible desde servidor local — error ENOTFOUND al intentar login |  Media | HU-05, HU-QA-01 | Reportado — pendiente resolución |
 
 ---
 

@@ -6,15 +6,15 @@ Este documento consolida la información obtenida a partir de las 10 entrevistas
 
 | # | Usuario | Rol / Negocio | Frecuencia del Problema | Impacto | Solución Actual | Interés en una Solución | Evidencia |
 |---|---------|---------------|-------------------------|---------|-----------------|-------------------------|-----------|
-| 1 | Anasilvia García | Dueña - Repostería Mayte | Diaria | Alto | WhatsApp / Papel | Alto | Foto (Carlos) |
+| 1 | Anasilvia García | Dueña - Repostería Mayte | Diaria | Alto | WhatsApp / Papel | Alto | Foto |
 | 2 | Dayana Morales | Gerente - Postres DABE | Diaria | Alto | Libreta + Excel + Caja | Muy alto | WhatsApp (Captura) |
 | 3 | Administrador | Administrador - Suculenta Café | Diaria | Alto | Excel manual al cierre | Muy alto | Audio FB (Captura) |
 | 4 | Dueño | Dueño - Café Isabella | Semanal | Alto | Notas en celular | Alto | Escrita (Resumen) |
 | 5 | Encargada | Encargada - La Artesanal | Diaria | Alto | Notas manuales | Alto | Escrita |
 | 6 | Dueño | Dueño - Casa María | Ocasional | Medio | Excel básico | Alto | Escrita |
-| 7 | Luis Gerardo | Encargado - Restaurante | Diaria | Alto | Verbal / WhatsApp | Alto | Google Meet (Alexis) |
+| 7 | Luis Gerardo | Encargado - Restaurante | Diaria | Alto | Verbal / WhatsApp | Alto | Google Meet |
 | 8 | Empleada | Empleada - Pastelería local | Diaria | Alto | Indicaciones verbales | Alto | Foto |
-| 9 | Encargada | Encargada - Ricotta Café | Diaria | Alto | Papel / Comunicación verbal | Alto | Foto (Carlos) |
+| 9 | Encargada | Encargada - Ricotta Café | Diaria | Alto | Papel / Comunicación verbal | Alto | Foto |
 | 10 | Persona entrevistada | Cliente / Empleado - Restaurante Tlayoli | Diaria | Medio | Verbal / Sin sistema | Medio | Foto |
 
 ## Principales Patrones Detectados

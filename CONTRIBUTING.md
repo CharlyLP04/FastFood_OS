@@ -71,13 +71,14 @@ Tu PR debe incluir obligatoriamente:
 
 ## 👥 Responsables por área
 
-| Área | Responsable principal |
-|------|-----------------------|
-| Backlog y producto | Dana (PO) |
-| Arquitectura y PRs | Carlos (Tech Lead) |
-| Features y UI | Alexis (Product Engineer) |
-| Testing y releases | Jarumi (QA) |
-| Analytics y growth | Manelic (Growth Lead) |
+| Área | Responsable |
+|------|-------------|
+| Backend y arquitectura | Tech Lead |
+| Backlog y producto | Product Owner |
+| DevOps y CI/CD | Tech Lead |
+| Features y UI | Product Engineer |
+| Testing y releases | QA |
+| Analytics y growth | Growth Lead |
 
 ---
 
@@ -93,5 +94,5 @@ Antes de crear un issue asegúrate de incluir:
 
 ---
 
-> 💡 Si tienes dudas, consulta primero con Carlos (Tech Lead)
+> 💡 Si tienes dudas, consulta primero con el Tech Lead
 > o revisa [`docs/github-flow.md`](docs/github-flow.md)

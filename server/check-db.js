@@ -1,7 +1,7 @@
 const { Client } = require('pg');
 
 // Try the external URL that worked before
-const url = 'postgresql://alaburger_db_user:jYQJGGAif4XPEIyef1z7AbyDMwTIwrHw@dpg-d9e6nb3tqb8s739t3gtg-a.virginia-postgres.render.com/alaburger_db';
+const url = 'postgresql://usuario:contraseña@localhost:5432/fastfood_db';
 
 console.log('Connecting to:', url.split('@')[1]);
 
