@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icon, ICONS } from '../components/ui/Icon';
 import { Toast } from '../components/ui/Toast';
-import { getUsuarios, getRoles, createUsuario, updateUsuario, toggleUsuarioStatus } from '../services/api';
+import { getUsuarios, getRoles, createUsuario, updateUsuario, toggleUsuarioStatus, deleteUsuario } from '../services/api';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
@@ -11,6 +12,10 @@ export default function Usuarios() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  
+  // Delete modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
   
   // Form state
   const [nombre, setNombre] = useState('');
@@ -73,6 +78,25 @@ export default function Usuarios() {
       fetchInitialData();
     } catch (error) {
       showToast(error.message || 'Error al cambiar estado.', 'warning');
+    }
+  };
+
+  const openDeleteModal = (user) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await deleteUsuario(userToDelete.id);
+      showToast('Empleado eliminado permanentemente.', 'success');
+      fetchInitialData();
+    } catch (error) {
+      showToast(error.message || 'Error al eliminar el usuario.', 'error');
+    } finally {
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
     }
   };
 
@@ -214,12 +238,19 @@ export default function Usuarios() {
                                 onClick={() => handleToggleStatus(user)}
                                 className={`p-2 rounded-lg transition-colors cursor-pointer active:scale-95 ${
                                   user.activo 
-                                    ? 'text-[#EF4444] hover:bg-[#EF4444]/20 bg-[#1C1C20]' 
+                                    ? 'text-[#F59E0B] hover:bg-[#F59E0B]/20 bg-[#1C1C20]' 
                                     : 'text-[#10B981] hover:bg-[#10B981]/20 bg-[#1C1C20]'
                                 }`}
-                                title={user.activo ? 'Desactivar empleado' : 'Activar empleado'}
+                                title={user.activo ? 'Desactivar acceso al sistema' : 'Activar acceso al sistema'}
                               >
-                                <Icon path={user.activo ? ICONS.trash : ICONS.check} size={16} />
+                                <Icon path={ICONS.power} size={16} />
+                              </button>
+                              <button
+                                onClick={() => openDeleteModal(user)}
+                                className="p-2 text-[#EF4444] hover:bg-[#EF4444]/20 bg-[#1C1C20] rounded-lg transition-colors cursor-pointer active:scale-95"
+                                title="Eliminar empleado"
+                              >
+                                <Icon path={ICONS.trash} size={16} />
                               </button>
                             </div>
                           )}
@@ -345,6 +376,20 @@ export default function Usuarios() {
           onClose={() => setToast(null)} 
         />
       )}
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="¿Eliminar permanentemente?"
+        message={`Estás a punto de eliminar al empleado "${userToDelete?.nombre} ${userToDelete?.apellido}". Esta acción es irreversible.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setIsDeleteModalOpen(false);
+          setUserToDelete(null);
+        }}
+      />
     </>
   );
 }

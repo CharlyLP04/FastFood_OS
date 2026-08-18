@@ -69,7 +69,7 @@ export default function Login() {
             <Icon path={ICONS.burger} size={22} />
           </div>
           <span className="font-heading font-black tracking-wider text-base text-white uppercase">
-            A LA BURGER OS
+            FASTFOOD OS
           </span>
         </div>
         <span className="text-[11px] font-bold px-3 py-1 bg-[#1C1C20] text-zinc-400 border border-white/10 rounded-full">
@@ -93,7 +93,7 @@ export default function Login() {
           </h1>
 
           <p className="text-zinc-400 text-base md:text-lg max-w-md leading-relaxed">
-            A La Burger OS centraliza pedidos, inventario, KDS y caja en un solo lugar con la mejor experiencia visual.
+            FastFood OS centraliza pedidos, inventario, KDS y caja en un solo lugar con la mejor experiencia visual.
           </p>
 
           <div className="flex items-center gap-4 text-xs font-bold text-zinc-400 pt-2">
@@ -196,7 +196,7 @@ export default function Login() {
 
       {/* Footer */}
       <footer className="w-full p-6 text-center text-xs text-zinc-500 border-t border-white/5 z-10">
-        © 2026 A La Burger OS. Todos los derechos reservados.
+        © 2026 FastFood OS. Todos los derechos reservados.
       </footer>
     </div>
   );

@@ -127,10 +127,37 @@ const toggleUserStatus = async (req, res) => {
   }
 };
 
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (id === '1') {
+      return res.status(403).json({ error: 'No se puede eliminar al administrador principal.' });
+    }
+    
+    const result = await pool.query(
+      `DELETE FROM usuarios WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    res.json({ mensaje: 'Usuario eliminado permanentemente' });
+  } catch (error) {
+    if (error.code === '23503') {
+      return res.status(400).json({ error: 'No se puede eliminar porque este usuario está asociado a órdenes u otros registros históricos.' });
+    }
+    manejarErrorInterno(error, res, 'eliminar usuario');
+  }
+};
+
 module.exports = {
   getUsers,
   getRoles,
   createUser,
   updateUser,
-  toggleUserStatus
+  toggleUserStatus,
+  deleteUser
 };

@@ -94,7 +94,7 @@ module.exports = app;
 // Iniciar servidor solo si no estamos en el entorno serverless de Vercel
 if (!process.env.VERCEL) {
   app.listen(PUERTO, () => {
-    console.log(`🍔 Servidor A La Burger OS corriendo en http://localhost:${PUERTO}`);
+    console.log(`🍔 Servidor FastFood OS corriendo en http://localhost:${PUERTO}`);
     console.log(`📡 Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
   });
 }

@@ -1,5 +1,5 @@
 /**
- * A LA BURGER OS — script.js
+ * FASTFOOD OS — script.js
  * ─────────────────────────────────────────────────────────
  * Módulos:
  *  1. Navbar: scroll + hamburguesa

@@ -97,7 +97,7 @@ export default function KDS() {
             <div className="bg-[#E85D2F]/15 border border-[#E85D2F]/30 p-2 rounded-xl text-[#E85D2F] flex items-center justify-center">
               <Icon path={ICONS.burger} size={20} />
             </div>
-            <h1 className="font-heading font-black tracking-wider text-sm uppercase text-white">A LA BURGER OS <span className="text-zinc-500 font-normal ml-2">/ KDS Cocina</span></h1>
+            <h1 className="font-heading font-black tracking-wider text-sm uppercase text-white">FASTFOOD OS <span className="text-zinc-500 font-normal ml-2">/ KDS Cocina</span></h1>
           </Link>
           {usuario?.rol === 'administrador' && (
             <Link to="/" className="text-xs bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-full transition-colors ml-2 active:scale-95">

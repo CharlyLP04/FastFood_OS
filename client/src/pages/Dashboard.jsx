@@ -121,7 +121,7 @@ export default function Dashboard() {
             <div>
               <h1 className="text-3xl font-heading font-black text-white tracking-tight flex items-center gap-3">
                 <Icon path={ICONS.dashboard} size={32} className="text-[#E85D2F]" />
-                Panel Ejecutivo A La Burger OS
+                Panel Ejecutivo FastFood OS
               </h1>
               <p className="text-xs font-bold text-zinc-400 tracking-wider uppercase flex items-center gap-2 mt-1">
                 <Icon path={ICONS.clock} size={14} />

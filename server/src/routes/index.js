@@ -15,7 +15,7 @@ const router = express.Router();
 router.get('/health', (req, res) => {
   res.status(200).json({
     estado: 'ok',
-    proyecto: 'A La Burger OS',
+    proyecto: 'FastFood OS',
     timestamp: new Date().toISOString(),
   });
 });

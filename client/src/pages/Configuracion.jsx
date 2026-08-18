@@ -73,7 +73,7 @@ export default function Configuracion() {
                 Configuración General
               </h1>
               <p className="text-neutral-400 text-sm mt-1 font-bold">
-                Ajusta las variables principales de A La Burger OS.
+                Ajusta las variables principales de FastFood OS.
               </p>
             </div>
             <button
@@ -112,7 +112,7 @@ export default function Configuracion() {
                       value={restaurantName}
                       onChange={(e) => setRestaurantName(e.target.value)}
                       className="w-full bg-[#0A0A0B] border border-[#1F1F23] focus:border-[#E8530A] focus:ring-1 focus:ring-[#E8530A] text-white rounded-xl px-4 py-3 text-sm outline-none transition-all placeholder:text-neutral-600 font-bold"
-                      placeholder="Ej. A La Burger"
+                      placeholder="Ej. FastFood"
                     />
                     <p className="text-[10px] text-neutral-500 font-bold pl-1 uppercase">
                       Este nombre aparecerá en los tickets.

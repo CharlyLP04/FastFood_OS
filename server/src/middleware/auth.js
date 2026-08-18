@@ -1,4 +1,4 @@
-// Middleware de autenticación JWT para A La Burger OS
+// Middleware de autenticación JWT para FastFood OS
 const jwt = require('jsonwebtoken');
 
 /**

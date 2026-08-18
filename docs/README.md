@@ -1,6 +1,6 @@
-# 🍔 A La Burger OS — Documentación Técnica
+# 🍔 FastFood OS — Documentación Técnica
 
-Bienvenido a la carpeta de documentación del proyecto **A La Burger OS**. 
+Bienvenido a la carpeta de documentación del proyecto **FastFood OS**. 
 Aquí guardamos toda la información técnica, guías de diseño, 
 arquitectura y flujos de trabajo necesarios para el equipo.
 
