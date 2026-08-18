@@ -1,22 +1,26 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import KDS from './pages/KDS';
-import WaiterApp from './pages/WaiterApp';
-import CajaApp from './pages/CajaApp';
-import Login from './pages/Login';
-import Forbidden from './pages/Forbidden';
-import Inventario from './pages/Inventario';
-import Pedidos from './pages/Pedidos';
-import Productos from './pages/Productos';
-import Usuarios from './pages/Usuarios';
-import Configuracion from './pages/Configuracion';
-import ModuloEnDesarrollo from './pages/ModuloEnDesarrollo';
-import ProtectedRoute from './components/ProtectedRoute';
-import AppLayout from './components/layout/AppLayout';
-import ErrorBoundary from './components/ErrorBoundary';
 import { useAuth } from './hooks/useAuth';
 import { getDefaultRouteForRole } from './utils/auth';
+
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoadingScreen from './components/ui/LoadingScreen';
+
+// Lazy loaded components (Code-Splitting)
+const Login = lazy(() => import('./pages/Login'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Inventario = lazy(() => import('./pages/Inventario'));
+const Pedidos = lazy(() => import('./pages/Pedidos'));
+const Productos = lazy(() => import('./pages/Productos'));
+const Usuarios = lazy(() => import('./pages/Usuarios'));
+const Configuracion = lazy(() => import('./pages/Configuracion'));
+const KDS = lazy(() => import('./pages/KDS'));
+const WaiterApp = lazy(() => import('./pages/WaiterApp'));
+const CajaApp = lazy(() => import('./pages/CajaApp'));
+const ModuloEnDesarrollo = lazy(() => import('./pages/ModuloEnDesarrollo'));
+const Forbidden = lazy(() => import('./pages/Forbidden'));
+const AppLayout = lazy(() => import('./components/layout/AppLayout'));
 
 /**
  * AuthenticatedRedirect — redirige al usuario a su ruta por rol.
@@ -52,66 +56,68 @@ function CatchAllRoute() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <Routes>
-        {/* RUTA DE INGRESO (LOGIN) */}
-        <Route
-          path="/login"
-          element={<PublicRoute><Login /></PublicRoute>}
-        />
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          {/* RUTA DE INGRESO (LOGIN) */}
+          <Route
+            path="/login"
+            element={<PublicRoute><Login /></PublicRoute>}
+          />
 
-        {/* Pantalla de Acceso Denegado 403 */}
-        <Route path="/403" element={<Forbidden />} />
+          {/* Pantalla de Acceso Denegado 403 */}
+          <Route path="/403" element={<Forbidden />} />
 
-        {/* RUTAS ADMINISTRATIVAS */}
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={['administrador', 'gerente']}>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/inventario" element={<Inventario />} />
-          <Route path="/pedidos" element={<Pedidos />} />
-          <Route path="/productos" element={<Productos />} />
-          <Route path="/usuarios" element={<Usuarios />} />
-          <Route path="/configuracion" element={<Configuracion />} />
-          <Route path="/reportes" element={<ModuloEnDesarrollo modulo="Reportes" />} />
-        </Route>
+          {/* RUTAS ADMINISTRATIVAS */}
+          <Route
+            element={
+              <ProtectedRoute allowedRoles={['administrador', 'gerente']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/inventario" element={<Inventario />} />
+            <Route path="/pedidos" element={<Pedidos />} />
+            <Route path="/productos" element={<Productos />} />
+            <Route path="/usuarios" element={<Usuarios />} />
+            <Route path="/configuracion" element={<Configuracion />} />
+            <Route path="/reportes" element={<ModuloEnDesarrollo modulo="Reportes" />} />
+          </Route>
 
-        {/* PANTALLA DE COCINA (KDS) */}
-        <Route
-          path="/cocina"
-          element={
-            <ProtectedRoute allowedRoles={['cocina', 'administrador']}>
-              <KDS />
-            </ProtectedRoute>
-          }
-        />
+          {/* PANTALLA DE COCINA (KDS) */}
+          <Route
+            path="/cocina"
+            element={
+              <ProtectedRoute allowedRoles={['cocina', 'administrador']}>
+                <KDS />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* PANTALLA DE MESEROS */}
-        <Route
-          path="/mesero"
-          element={
-            <ProtectedRoute allowedRoles={['mesero', 'administrador']}>
-              <WaiterApp />
-            </ProtectedRoute>
-          }
-        />
+          {/* PANTALLA DE MESEROS */}
+          <Route
+            path="/mesero"
+            element={
+              <ProtectedRoute allowedRoles={['mesero', 'administrador']}>
+                <WaiterApp />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* PANTALLA DE CAJERO */}
-        <Route
-          path="/caja"
-          element={
-            <ProtectedRoute allowedRoles={['cajero', 'administrador']}>
-              <CajaApp />
-            </ProtectedRoute>
-          }
-        />
+          {/* PANTALLA DE CAJERO */}
+          <Route
+            path="/caja"
+            element={
+              <ProtectedRoute allowedRoles={['cajero', 'administrador']}>
+                <CajaApp />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* FALLBACK */}
-        <Route path="*" element={<CatchAllRoute />} />
-      </Routes>
+          {/* FALLBACK */}
+          <Route path="*" element={<CatchAllRoute />} />
+        </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

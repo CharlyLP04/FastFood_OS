@@ -9,7 +9,7 @@ Rol: QA / Delivery
 
 # Objetivo
 
-Definir cómo se verificará la calidad del sistema A La Burger OS para asegurar el correcto funcionamiento de sus módulos principales.
+Definir cómo se verificará la calidad del sistema FastFood OS para asegurar el correcto funcionamiento de sus módulos principales.
 
 ---
 
@@ -93,4 +93,4 @@ Definir cómo se verificará la calidad del sistema A La Burger OS para asegurar
 
 # Conclusión
 
-La implementación de este plan de pruebas permitirá detectar errores de manera temprana y garantizar la calidad, confiabilidad y correcto funcionamiento de A La Burger OS antes de su despliegue.
+La implementación de este plan de pruebas permitirá detectar errores de manera temprana y garantizar la calidad, confiabilidad y correcto funcionamiento de FastFood OS antes de su despliegue.

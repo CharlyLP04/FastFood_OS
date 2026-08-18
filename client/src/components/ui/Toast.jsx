@@ -57,7 +57,7 @@ export function Toast({ message, type = 'info', onClose }) {
           glow: 'shadow-[0_0_20px_rgba(232,93,47,0.3)]',
           progressBar: 'bg-[#E85D2F]',
           icon: ICONS.burger,
-          title: 'Notificación A La Burger'
+          title: 'Notificación FastFood'
         };
     }
   };

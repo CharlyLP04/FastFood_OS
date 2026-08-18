@@ -1,5 +1,5 @@
 /**
- * rateLimiter.js — Rate limiting para A La Burger OS
+ * rateLimiter.js — Rate limiting para FastFood OS
  *
  * Dos estrategias de defensa en profundidad para /login:
  *

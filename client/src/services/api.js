@@ -1,5 +1,5 @@
 /**
- * api.js — Cliente HTTP central para A La Burger OS (HU-5)
+ * api.js — Cliente HTTP central para FastFood OS (HU-5)
  *
  * CAMBIOS HU-5:
  *  - credentials: 'include' en TODOS los requests (las cookies httpOnly viajan así)
@@ -344,6 +344,12 @@ export function updateUsuario(id, payload) {
 export function toggleUsuarioStatus(id) {
   return apiFetch(`/usuarios/${id}/status`, {
     method: 'PATCH',
+  });
+}
+
+export function deleteUsuario(id) {
+  return apiFetch(`/usuarios/${id}`, {
+    method: 'DELETE',
   });
 }
 

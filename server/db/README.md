@@ -1,11 +1,11 @@
-# 🗄️ A La Burger OS — Base de Datos PostgreSQL
+# 🗄️ FastFood OS — Base de Datos PostgreSQL
 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Estado](https://img.shields.io/badge/Estado-Estable-brightgreen?style=for-the-badge)
 ![Versión](https://img.shields.io/badge/Versión-1.0.0-orange?style=for-the-badge)
 ![Licencia](https://img.shields.io/badge/Licencia-MIT-blue?style=for-the-badge)
 
-> Esquema relacional completo para la gestión de pedidos, inventario, usuarios y ventas de **A La Burger** — diseñado para escalar a múltiples sucursales.
+> Esquema relacional completo para la gestión de pedidos, inventario, usuarios y ventas de **FastFood** — diseñado para escalar a múltiples sucursales.
 
 ---
 
@@ -20,7 +20,7 @@
 
 ## 🏗️ Diagrama de Entidades
 
-![Diagrama de Entidades — A La Burger OS](./Diagrama%20de%20Entidades.png)
+![Diagrama de Entidades — FastFood OS](./Diagrama%20de%20Entidades.png)
 
 ---
 

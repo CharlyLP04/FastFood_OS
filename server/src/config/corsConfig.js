@@ -1,5 +1,5 @@
 /**
- * corsConfig.js — Configuración CORS con whitelist explícita para A La Burger OS
+ * corsConfig.js — Configuración CORS con whitelist explícita para FastFood OS
  *
  * PRODUCCIÓN: solo dominios de Vercel autorizados y el backend en Render.
  * DESARROLLO: localhost en los puertos habituales de Vite (5173) y Express (3000).

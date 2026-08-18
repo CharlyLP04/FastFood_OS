@@ -1,5 +1,5 @@
 /**
- * helmetConfig.js — Configuración de helmet para A La Burger OS
+ * helmetConfig.js — Configuración de helmet para FastFood OS
  *
  * Este servidor es una API REST pura (JSON), no sirve HTML ni recursos
  * estáticos propios, por lo que la CSP por defecto de helmet no aplica.
