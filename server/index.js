@@ -5,6 +5,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const validateEnv = require('./src/config/validateEnv');
 validateEnv();
 
+// Auto-inicialización de la base de datos (corre schema.sql si es primera vez)
+const initDb = require('./src/config/initDb');
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -93,8 +96,11 @@ module.exports = app;
 
 // Iniciar servidor solo si no estamos en el entorno serverless de Vercel
 if (!process.env.VERCEL) {
-  app.listen(PUERTO, () => {
-    console.log(`🍔 Servidor FastFood OS corriendo en http://localhost:${PUERTO}`);
-    console.log(`📡 Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
+  // Inicializar DB antes de aceptar peticiones
+  initDb().then(() => {
+    app.listen(PUERTO, () => {
+      console.log(`🍔 Servidor FastFood OS corriendo en http://localhost:${PUERTO}`);
+      console.log(`📡 Entorno: ${process.env.NODE_ENV || 'desarrollo'}`);
+    });
   });
 }
